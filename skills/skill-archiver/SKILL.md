@@ -57,13 +57,18 @@ Whenever skills are archived, migrated, or updated, the skill regenerates:
    ```
    Or invoke internal analysis routine.
 2. Present the breakdown to the user:
-   - Total global skills and prompt token weight.
+   - Total global skills and current prompt token weight.
+   - **Estimated Token Savings Calculation**:
+     - *Per single message turn*: ~X tokens liberated.
+     - *Per typical 20-message conversation*: ~Y tokens saved (e.g. 20 * X).
+     - *Percentage prompt bloat reduction*: ~Z%.
    - Detected active MCP servers.
    - Grouped recommendations (Core, Safety, MCP-linked, Specialized).
    - Duplicate status (how many are already identically in the warehouse).
 3. For MCP-linked skills, ask confirmation politely without alarming the user:
    *"The following skills connect to your configured MCP servers: [X, Y]. Would you like to keep them active globally or archive them to load only in relevant projects?"*
 4. Execute the move for approved skills, delete the global copies, and re-index the catalog.
+5. Provide a summary of the actual tokens saved in the active session.
 
 ---
 

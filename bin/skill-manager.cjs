@@ -638,18 +638,165 @@ function archiveSkill(sourcePath, options = {}) {
 }
 
 // ==========================================
+// Project Inspection & Skill Recommendation
+// ==========================================
+function inspectProjectEnvironment(projectDir) {
+  const root = projectDir ? path.resolve(projectDir) : process.cwd();
+  const techSignals = new Set();
+  const detectedFiles = [];
+
+  // Check package.json
+  const pkgPath = path.join(root, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    detectedFiles.push('package.json');
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+      const keys = Object.keys(deps).join(' ').toLowerCase();
+
+      if (keys.includes('react')) techSignals.add('react');
+      if (keys.includes('vue')) techSignals.add('vue');
+      if (keys.includes('next')) techSignals.add('nextjs');
+      if (keys.includes('tailwind')) techSignals.add('tailwind');
+      if (keys.includes('typescript')) techSignals.add('typescript');
+      if (keys.includes('jest') || keys.includes('vitest') || keys.includes('playwright')) techSignals.add('testing');
+      if (keys.includes('remotion')) techSignals.add('remotion');
+      if (keys.includes('shadcn') || keys.includes('radix')) techSignals.add('shadcn');
+      if (keys.includes('stripe')) techSignals.add('stripe');
+      if (keys.includes('supabase')) techSignals.add('supabase');
+    } catch (_) {}
+  }
+
+  // Check Python
+  const pyFiles = ['requirements.txt', 'pyproject.toml', 'Pipfile'];
+  for (const pf of pyFiles) {
+    if (fs.existsSync(path.join(root, pf))) {
+      detectedFiles.push(pf);
+      techSignals.add('python');
+      try {
+        const c = fs.readFileSync(path.join(root, pf), 'utf8').toLowerCase();
+        if (c.includes('pandas') || c.includes('numpy') || c.includes('polars')) techSignals.add('data-science');
+        if (c.includes('torch') || c.includes('tensorflow') || c.includes('transformers')) techSignals.add('ml');
+        if (c.includes('bigquery') || c.includes('dbt')) techSignals.add('bigquery');
+      } catch (_) {}
+    }
+  }
+
+  // Check Docker
+  if (fs.existsSync(path.join(root, 'Dockerfile')) || fs.existsSync(path.join(root, 'docker-compose.yml'))) {
+    detectedFiles.push('Docker');
+    techSignals.add('docker');
+  }
+
+  // Check Git
+  if (fs.existsSync(path.join(root, '.git'))) {
+    detectedFiles.push('Git repository');
+    techSignals.add('git');
+  }
+
+  return { root, detectedFiles, techSignals: Array.from(techSignals) };
+}
+
+function recommendSkills(projectDir) {
+  const envInfo = inspectProjectEnvironment(projectDir);
+  const catalog = getCatalogData();
+  const packs = loadPacks();
+
+  console.log(`\n\x1b[1m══════════════════════════════════════════════════════════════════════════\x1b[0m`);
+  console.log(`\x1b[1m                 Antigravity Project Skill Recommendations                \x1b[0m`);
+  console.log(`\x1b[1m══════════════════════════════════════════════════════════════════════════\x1b[0m\n`);
+  console.log(`Inspected Directory:     \x1b[36m${envInfo.root}\x1b[0m`);
+  console.log(`Detected Indicators:     \x1b[33m${envInfo.detectedFiles.join(', ') || 'None found'}\x1b[0m`);
+  console.log(`Identified Tech Signals: \x1b[32m${envInfo.techSignals.join(', ') || 'General Workflow'}\x1b[0m\n`);
+
+  const recommendations = [];
+
+  if (envInfo.techSignals.includes('react') || envInfo.techSignals.includes('tailwind')) {
+    recommendations.push({
+      type: 'pack',
+      target: 'stitch-ui',
+      reason: 'Detected React / Tailwind frontend. Stitch UI provides UI design synthesis, component scaffolding, and CSS cleanup.'
+    });
+    recommendations.push({
+      type: 'skill',
+      target: 'react-components',
+      reason: 'Converts mockups and HTML into modular, production-ready React components.'
+    });
+  }
+
+  if (envInfo.techSignals.includes('testing') || envInfo.techSignals.includes('git')) {
+    recommendations.push({
+      type: 'pack',
+      target: 'dev-workflow',
+      reason: 'Detected Git repository / testing tooling. Dev-workflow introduces TDD, code-review rigor, and bug diagnostics.'
+    });
+  }
+
+  if (envInfo.techSignals.includes('bigquery') || envInfo.techSignals.includes('data-science')) {
+    recommendations.push({
+      type: 'pack',
+      target: 'gcp-bigquery',
+      reason: 'Detected data engineering or BigQuery assets. Provides dbt, Dataform, and SQL optimization skills.'
+    });
+  }
+
+  if (envInfo.techSignals.includes('python')) {
+    recommendations.push({
+      type: 'skill',
+      target: 'managing-python-dependencies',
+      reason: 'Ensures isolated virtual environments, preventing accidental global pip installs.'
+    });
+  }
+
+  if (envInfo.techSignals.includes('docker')) {
+    recommendations.push({
+      type: 'skill',
+      target: 'docker',
+      reason: 'Provides isolated sandbox container execution for tests and replication.'
+    });
+  }
+
+  // Always suggest caveman token efficiency
+  recommendations.push({
+    type: 'pack',
+    target: 'caveman',
+    reason: 'Token optimization: Cuts token usage ~75% across long agentic sessions.'
+  });
+
+  console.log(`\x1b[1mRecommended Skills & Packs for This Workspace:\x1b[0m\n`);
+  recommendations.forEach((rec, idx) => {
+    const badge = rec.type === 'pack' ? '\x1b[35m[PACK]\x1b[0m' : '\x1b[36m[SKILL]\x1b[0m';
+    console.log(`  ${idx + 1}. ${badge} \x1b[1m${rec.target}\x1b[0m`);
+    console.log(`     \x1b[90m${rec.reason}\x1b[0m`);
+    console.log(`     \x1b[32mActivate with:\x1b[0m skill-manager activate ${rec.target}\n`);
+  });
+
+  return { envInfo, recommendations };
+}
+
+// ==========================================
 // Intelligent Migration & User Advisory
 // ==========================================
 async function runMigration(options = {}) {
   const analysis = analyzeAllGlobalSkills();
   const libraryDir = getLibraryPath();
 
+  const tokensPerTurn = analysis.summary.totalTokens;
+  const tokensPerSession20 = tokensPerTurn * 20;
+  const specializedTokens = analysis.summary.specialized.reduce((acc, s) => acc + s.tokenEstimate, 0);
+  const potentialSavingsSession = specializedTokens * 20;
+
   console.log(`\n\x1b[1m══════════════════════════════════════════════════════════════════════════\x1b[0m`);
   console.log(`\x1b[1m               Antigravity Global Skills Advisory & Migration             \x1b[0m`);
   console.log(`\x1b[1m══════════════════════════════════════════════════════════════════════════\x1b[0m\n`);
 
   console.log(`Detected Active MCP Servers: \x1b[33m${analysis.configuredMcp.join(', ') || 'None'}\x1b[0m`);
-  console.log(`Current Global Active Skills: \x1b[36m${analysis.total}\x1b[0m (injecting ~${analysis.summary.totalTokens} prompt tokens/turn)\n`);
+  console.log(`Current Global Active Skills: \x1b[36m${analysis.total}\x1b[0m\n`);
+
+  console.log(`\x1b[1m📊 Token Overhead Economics:\x1b[0m`);
+  console.log(`  • Current prompt overhead:     \x1b[33m~${tokensPerTurn.toLocaleString()} tokens per message turn\x1b[0m`);
+  console.log(`  • Overhead in a 20-turn chat:  \x1b[31m~${tokensPerSession20.toLocaleString()} tokens wasted per session\x1b[0m`);
+  console.log(`  • Potential tokens liberated:  \x1b[32m~${potentialSavingsSession.toLocaleString()} tokens saved per 20-turn session\x1b[0m\n`);
 
   // Group 1: Core Essentials
   console.log(`\x1b[32m[1] Core System Skills - MUST KEEP GLOBAL (${analysis.summary.core.length}):\x1b[0m`);
@@ -870,6 +1017,13 @@ async function main() {
       break;
     }
 
+    case 'recommend':
+    case 'advise': {
+      const targetDir = args[1] || process.cwd();
+      recommendSkills(targetDir);
+      break;
+    }
+
     case 'status': {
       const cat = getCatalogData();
       const analysis = analyzeAllGlobalSkills();
@@ -892,6 +1046,7 @@ async function main() {
   skill-manager <command> [arguments]
 
 \x1b[1mCOMMANDS:\x1b[0m
+  \x1b[36mrecommend [dir]\x1b[0m          Inspect project tech stack and recommend relevant skills/packs
   \x1b[36manalyze\x1b[0m                  Intelligently inspect global skills, MCP links & token impact
   \x1b[36mduplicates\x1b[0m               Check for identical or conflicting copies in warehouse
   \x1b[36msearch <keyword>\x1b[0m         Search local warehouse by keyword, tag, or pack
@@ -924,7 +1079,9 @@ module.exports = {
   reindexCatalog,
   archiveSkill,
   activateSkillOrPack,
-  deactivateSkill
+  deactivateSkill,
+  inspectProjectEnvironment,
+  recommendSkills
 };
 
 if (require.main === module) {
