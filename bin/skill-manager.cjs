@@ -8,6 +8,7 @@
  * Fully cross-platform (Windows, macOS, Linux) with dynamic user home resolution.
  * Completely dynamic: Zero hardcoded skill names, dynamically inspects user's MCP configurations,
  * detects duplicates, enforces indivisible skill bundles & dependency graphs,
+ * manages global and project-scoped MCP server isolation,
  * and provides intelligent token-saving advice.
  */
 
@@ -66,8 +67,31 @@ function getPacksFilePath() {
 }
 
 // ==========================================
-// Dynamic MCP Server Discovery
+// Dynamic MCP Server Discovery & Management
 // ==========================================
+function getMcpConfigPath() {
+  if (process.env.ANTIGRAVITY_MCP_CONFIG) {
+    return path.resolve(process.env.ANTIGRAVITY_MCP_CONFIG);
+  }
+  return path.join(getUserHome(), '.gemini', 'config', 'mcp_config.json');
+}
+
+function loadMcpConfig() {
+  const cfgPath = getMcpConfigPath();
+  if (fs.existsSync(cfgPath)) {
+    try {
+      return JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    } catch (_) {}
+  }
+  return { mcpServers: {} };
+}
+
+function saveMcpConfig(data) {
+  const cfgPath = getMcpConfigPath();
+  fs.mkdirSync(path.dirname(cfgPath), { recursive: true });
+  fs.writeFileSync(cfgPath, JSON.stringify(data, null, 2), 'utf8');
+}
+
 function getConfiguredMcpServers() {
   const mcpServers = new Set();
   const home = getUserHome();
@@ -111,6 +135,89 @@ function getConfiguredMcpServers() {
   }
 
   return Array.from(mcpServers);
+}
+
+function listMcpServersDetailed() {
+  const config = loadMcpConfig();
+  const servers = config.mcpServers || {};
+  const serverNames = Object.keys(servers);
+
+  console.log(`\n\x1b[1mConfigured MCP Servers (${getMcpConfigPath()}):\x1b[0m\n`);
+  if (serverNames.length === 0) {
+    console.log(`  No MCP servers configured.\n`);
+    return;
+  }
+
+  for (const name of serverNames) {
+    const s = servers[name];
+    const isDisabled = s.disabled === true;
+    const statusBadge = isDisabled ? '\x1b[33m[DISABLED (OFF)]\x1b[0m' : '\x1b[32m[ACTIVE (ON)]\x1b[0m';
+    const transport = s.serverUrl ? `SSE (${s.serverUrl})` : `Stdio (${s.command} ${(s.args || []).join(' ')})`;
+    console.log(`  • \x1b[1m\x1b[36m${name}\x1b[0m: ${statusBadge}`);
+    console.log(`    \x1b[90mTransport: ${transport}\x1b[0m`);
+  }
+  console.log('');
+  console.log(`\x1b[36mManagement Commands:\x1b[0m`);
+  console.log(`  skill-manager mcp enable <name>     # Turn ON globally in mcp_config.json`);
+  console.log(`  skill-manager mcp disable <name>    # Turn OFF globally (saves RAM/tokens)`);
+  console.log(`  skill-manager mcp isolate <name>    # Isolate to current project (.agents/plugins/)\n`);
+}
+
+function toggleMcpServer(serverName, enable) {
+  const config = loadMcpConfig();
+  if (!config.mcpServers || !config.mcpServers[serverName]) {
+    console.log(`\x1b[31m✖ Server "${serverName}" is not configured in mcp_config.json.\x1b[0m`);
+    return false;
+  }
+  if (enable) {
+    delete config.mcpServers[serverName].disabled;
+    saveMcpConfig(config);
+    console.log(`\x1b[32m✔ Enabled MCP server "${serverName}" globally (disabled: false).\x1b[0m`);
+  } else {
+    config.mcpServers[serverName].disabled = true;
+    saveMcpConfig(config);
+    console.log(`\x1b[33m✔ Disabled MCP server "${serverName}" globally (disabled: true).\x1b[0m`);
+  }
+  printReloadReminder();
+  return true;
+}
+
+function isolateMcpServerToProject(serverName, targetProjectDir) {
+  const config = loadMcpConfig();
+  if (!config.mcpServers || !config.mcpServers[serverName]) {
+    console.log(`\x1b[31m✖ Server "${serverName}" is not configured in global mcp_config.json.\x1b[0m`);
+    return false;
+  }
+
+  const projectRoot = targetProjectDir ? path.resolve(targetProjectDir) : process.cwd();
+  const pluginDir = path.join(projectRoot, '.agents', 'plugins', `${serverName}-mcp`);
+  fs.mkdirSync(pluginDir, { recursive: true });
+
+  // Clone server config without 'disabled' flag
+  const serverDef = { ...config.mcpServers[serverName] };
+  delete serverDef.disabled;
+
+  // 1. plugin.json
+  const pluginJson = {
+    name: `${serverName}-mcp`,
+    description: `Project-scoped MCP server plugin for ${serverName}`
+  };
+  fs.writeFileSync(path.join(pluginDir, 'plugin.json'), JSON.stringify(pluginJson, null, 2), 'utf8');
+
+  // 2. mcp_config.json
+  const projectMcpConfig = {
+    mcpServers: {
+      [serverName]: serverDef
+    }
+  };
+  fs.writeFileSync(path.join(pluginDir, 'mcp_config.json'), JSON.stringify(projectMcpConfig, null, 2), 'utf8');
+
+  console.log(`\n\x1b[32m✔ Successfully isolated MCP server "${serverName}" to current project workspace!\x1b[0m`);
+  console.log(`  Plugin location: \x1b[36m${pluginDir}\x1b[0m`);
+  console.log(`  \x1b[90mThis server will run ONLY when working inside this project workspace.\x1b[0m`);
+  console.log(`  \x1b[90mOther projects will NOT load "${serverName}".\x1b[0m\n`);
+  printReloadReminder();
+  return true;
 }
 
 // ==========================================
@@ -289,6 +396,45 @@ function resolveSkillBundle(skillName, allSkillsList = [], packs = {}) {
     skills: [skillName],
     reason: null
   };
+}
+
+function getSkillDependenciesRecursively(skillName, libraryDir, packs, visited = new Set()) {
+  const result = new Set();
+  const queue = [skillName];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (visited.has(current)) continue;
+    visited.add(current);
+    result.add(current);
+
+    // If in an indivisible bundle, include all skills in the bundle
+    const bundle = resolveSkillBundle(current, [], packs);
+    if (bundle.isBundle && bundle.indivisible) {
+      for (const s of bundle.skills) {
+        result.add(s);
+        visited.add(s);
+      }
+      continue;
+    }
+
+    // Also check scanned dependencies
+    const skillPath = path.join(libraryDir, current);
+    if (fs.existsSync(skillPath)) {
+      let allKnown = [];
+      try {
+        allKnown = fs.readdirSync(libraryDir).filter(f => !f.startsWith('.'));
+      } catch (_) {}
+      const deps = scanSkillDependencies(skillPath, allKnown);
+      for (const d of deps) {
+        if (!visited.has(d)) {
+          queue.push(d);
+        }
+      }
+    }
+  }
+
+  return Array.from(result);
 }
 
 // ==========================================
@@ -678,7 +824,7 @@ function getCatalogData() {
 }
 
 // ==========================================
-// Skill Activation & Deactivation
+// Skill Activation & Deactivation (Strictly Copies to Project)
 // ==========================================
 function copyDirSync(src, dest) {
   fs.mkdirSync(dest, { recursive: true });
@@ -712,14 +858,22 @@ function activateSkillOrPack(targetName, options = {}) {
     skillsToActivate = packs[targetName].skills;
     console.log(`\x1b[36mActivating pack "${targetName}" (${skillsToActivate.length} skills)...\x1b[0m`);
   } else {
-    // Check if skill belongs to an indivisible bundle
+    // Check if skill belongs to an indivisible bundle or has dependencies
     const bundle = resolveSkillBundle(targetName, [], packs);
     if (bundle.isBundle && (options.bundle || bundle.indivisible)) {
       console.log(`\x1b[33mNotice: "${targetName}" belongs to indivisible bundle "${bundle.bundleName}".\x1b[0m`);
-      console.log(`Activating all ${bundle.skills.length} connected skills together to ensure runtime integrity...\n`);
+      console.log(`Copying entire kit (${bundle.skills.length} connected skills) into project to preserve runtime integrity...\n`);
       skillsToActivate = bundle.skills;
     } else {
-      skillsToActivate = [targetName];
+      // Check if skill has direct/transitive dependencies
+      const allRequired = getSkillDependenciesRecursively(targetName, libraryDir, packs);
+      if (allRequired.length > 1) {
+        console.log(`\x1b[36mNotice: "${targetName}" depends on ${allRequired.length - 1} companion skill(s).\x1b[0m`);
+        console.log(`Copying full set: [${allRequired.join(', ')}] into project...\n`);
+        skillsToActivate = allRequired;
+      } else {
+        skillsToActivate = [targetName];
+      }
     }
   }
 
@@ -737,18 +891,19 @@ function activateSkillOrPack(targetName, options = {}) {
 
     try {
       copyDirSync(sourceDir, destinationDir);
-      console.log(`  \x1b[32m✔ Activated:\x1b[0m ${skill} -> ${destinationDir}`);
+      console.log(`  \x1b[32m✔ Activated: ${skill}\x1b[0m (copied to project: ${destinationDir})`);
       successCount++;
     } catch (err) {
-      console.error(`  \x1b[31m✖ Failed to activate ${skill}:\x1b[0m`, err.message);
+      console.error(`  \x1b[31m✖ Failed to copy ${skill}:\x1b[0m`, err.message);
     }
   }
 
   if (successCount > 0) {
     const scope = isGlobal ? 'globally' : 'for current project';
-    console.log(`\n\x1b[32m✔ Successfully activated ${successCount} skill(s) ${scope}.\x1b[0m`);
+    console.log(`\n\x1b[32m✔ Successfully copied ${successCount} skill(s) ${scope}.\x1b[0m`);
     if (!isGlobal) {
-      console.log(`\x1b[90mActive skills located in: ${targetRoot}\x1b[0m`);
+      console.log(`\x1b[90mWorkspace skills directory: ${targetRoot}\x1b[0m`);
+      console.log(`\x1b[90m(Library warehouse remains 100% complete and intact)\x1b[0m`);
     }
     printReloadReminder();
   }
@@ -1104,6 +1259,17 @@ async function runMigration(options = {}) {
         copyDirSync(mcpSkill.path, target);
         fs.rmSync(mcpSkill.path, { recursive: true, force: true });
         console.log(`  \x1b[32m✔ Moved ${mcpSkill.name} to warehouse.\x1b[0m`);
+
+        // Ask to disable MCP server if configured
+        if (mcpSkill.linkedMcpServers.length > 0) {
+          for (const sName of mcpSkill.linkedMcpServers) {
+            const disPrompt = `Disable server "${sName}" in mcp_config.json to prevent background overhead? (y/N): `;
+            const disAns = options.yes ? 'n' : await question(disPrompt);
+            if (disAns.toLowerCase() === 'y') {
+              toggleMcpServer(sName, false);
+            }
+          }
+        }
       } else {
         console.log(`  \x1b[90mPreserved ${mcpSkill.name} in global.\x1b[0m`);
       }
@@ -1197,6 +1363,36 @@ async function main() {
           console.log(`     ${p.description}`);
           console.log(`     Connected Skills (${p.skills.length}): \x1b[90m${p.skills.join(', ')}\x1b[0m\n`);
         }
+      }
+      break;
+    }
+
+    case 'mcp': {
+      const subAction = args[1];
+      const targetServer = args[2];
+
+      if (!subAction || subAction === 'list') {
+        listMcpServersDetailed();
+      } else if (subAction === 'enable') {
+        if (!targetServer) {
+          console.log('\x1b[31mUsage: skill-manager mcp enable <server-name>\x1b[0m');
+          process.exit(1);
+        }
+        toggleMcpServer(targetServer, true);
+      } else if (subAction === 'disable') {
+        if (!targetServer) {
+          console.log('\x1b[31mUsage: skill-manager mcp disable <server-name>\x1b[0m');
+          process.exit(1);
+        }
+        toggleMcpServer(targetServer, false);
+      } else if (subAction === 'isolate') {
+        if (!targetServer) {
+          console.log('\x1b[31mUsage: skill-manager mcp isolate <server-name> [project-dir]\x1b[0m');
+          process.exit(1);
+        }
+        isolateMcpServerToProject(targetServer, args[3]);
+      } else {
+        console.log(`\x1b[31mUnknown mcp action: "${subAction}". Use: list, enable, disable, isolate.\x1b[0m`);
       }
       break;
     }
@@ -1337,10 +1533,14 @@ async function main() {
   \x1b[36manalyze\x1b[0m                  Intelligently inspect global skills, MCP links & indivisible bundles
   \x1b[36mbundles\x1b[0m                  List all indivisible skill bundles (e.g. AI Hero & Matt Pocock suite)
   \x1b[36mbundle <name>\x1b[0m            Check if a skill belongs to an indivisible bundle and list members
+  \x1b[36mmcp [list]\x1b[0m               List all configured MCP servers and active/disabled state
+  \x1b[36mmcp enable <server>\x1b[0m      Enable an MCP server globally (disabled: false)
+  \x1b[36mmcp disable <server>\x1b[0m     Disable an MCP server globally to save background memory/tokens
+  \x1b[36mmcp isolate <server>\x1b[0m     Isolate an MCP server to current project workspace (.agents/plugins/)
   \x1b[36mduplicates\x1b[0m               Check for identical or conflicting copies in warehouse
   \x1b[36msearch <keyword>\x1b[0m         Search local warehouse by keyword, tag, or pack
-  \x1b[36mactivate <name|pack>\x1b[0m     Activate skill or pack in current project (.agents/skills/)
-  \x1b[36mactivate <name> --global\x1b[0m Activate skill globally (~/.gemini/config/skills/)
+  \x1b[36mactivate <name|pack>\x1b[0m     Copy skill, kit, or pack to current project (.agents/skills/)
+  \x1b[36mactivate <name> --global\x1b[0m Copy skill globally (~/.gemini/config/skills/)
   \x1b[36mdeactivate <name>\x1b[0m        Remove skill from current project (.agents/skills/)
   \x1b[36mlist\x1b[0m                     List all dormant skills in the warehouse
   \x1b[36mpacks\x1b[0m                    List available curated skill packs
@@ -1366,6 +1566,12 @@ module.exports = {
   extractSkillMetadata,
   scanSkillDependencies,
   resolveSkillBundle,
+  getSkillDependenciesRecursively,
+  loadMcpConfig,
+  saveMcpConfig,
+  listMcpServersDetailed,
+  toggleMcpServer,
+  isolateMcpServerToProject,
   analyzeSkill,
   analyzeAllGlobalSkills,
   reindexCatalog,

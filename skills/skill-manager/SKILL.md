@@ -146,6 +146,27 @@ When a skill is not found in the local warehouse:
 
 ---
 
+### 7. MCP Server Management & Project Workspace Isolation
+Antigravity supports both global MCP servers (`~/.gemini/config/mcp_config.json`) and per-project MCP isolation via workspace plugins (`<project-root>/.agents/plugins/<server>-mcp/mcp_config.json`):
+- **Inspect MCP status**:
+  ```bash
+  node <path-to-skill-manager>/bin/skill-manager.cjs mcp list
+  ```
+- **Disable unused global server** (sets `"disabled": true` to free RAM, CPU, and thousands of prompt tokens):
+  ```bash
+  node <path-to-skill-manager>/bin/skill-manager.cjs mcp disable <server-name>
+  ```
+- **Re-enable global server**:
+  ```bash
+  node <path-to-skill-manager>/bin/skill-manager.cjs mcp enable <server-name>
+  ```
+- **Isolate MCP server to current workspace** (project X has the MCP server, project Y does not):
+  ```bash
+  node <path-to-skill-manager>/bin/skill-manager.cjs mcp isolate <server-name>
+  ```
+
+---
+
 ## Built-In Curated Packs Reference
 
 | Pack Key | Name | Key Skills Included |
