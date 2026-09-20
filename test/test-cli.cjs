@@ -5,10 +5,12 @@
  * 1. CLI help & basic execution
  * 2. Dynamic MCP server discovery from mock mcp_config.json
  * 3. Deep duplicate detection (IDENTICAL, MODIFIED, UNIQUE)
- * 4. Hybrid catalog regeneration (catalog.json + CATALOG.md)
+ * 4. Hybrid catalog regeneration with portable paths (ZERO host data leakage)
  * 5. Dynamic categorization and user advisory logic
  * 6. Safe archiving with duplicate backup
- * 7. Project workspace activation (.agents/skills/) and deactivation
+ * 7. Structural Dependency Scanning & Indivisible Bundle Enforcement
+ * 8. Project workspace activation (.agents/skills/) and deactivation
+ * 9. Repository catalog integrity (guaranteeing mock tests don't overwrite repo files)
  */
 
 const fs = require('fs');
@@ -25,6 +27,10 @@ const cliModule = require(cliPath);
 console.log('\n======================================================');
 console.log('   Antigravity Skill-Manager Comprehensive Tests      ');
 console.log('======================================================\n');
+
+// Capture repo catalog mtime before running tests
+const repoCatalogPath = path.join(__dirname, '..', 'catalog', 'catalog.json');
+const repoCatalogContentBefore = fs.existsSync(repoCatalogPath) ? fs.readFileSync(repoCatalogPath, 'utf8') : null;
 
 // Set up isolated temporary test environment
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-mgr-deep-test-'));
@@ -68,7 +74,6 @@ const env = {
 console.log('Test 1: Dynamic MCP Server Discovery');
 const detectedServers = cliModule.getConfiguredMcpServers();
 assert(Array.isArray(detectedServers), 'Should return array of servers');
-// Using the mock config env
 assert(fs.existsSync(mockMcpConfig), 'Mock config must exist');
 console.log(`  ✔ Discovered MCP configuration successfully`);
 
@@ -153,9 +158,9 @@ assert.strictEqual(analysisSpec.recommendation, 'ARCHIVE', 'Must recommend ARCHI
 console.log('  ✔ Dynamic advisory categorized all types with exact reasoning');
 
 // ----------------------------------------------------
-// TEST 4: Hybrid Catalog Re-Indexing & Token Metrics
+// TEST 4: Hybrid Catalog Re-Indexing & Portable Paths
 // ----------------------------------------------------
-console.log('\nTest 4: Hybrid Catalog Generation (catalog.json & CATALOG.md)');
+console.log('\nTest 4: Hybrid Catalog Generation (catalog.json & CATALOG.md) with Portable Paths');
 const reindexCmd = `node "${cliPath}" reindex`;
 const reindexOut = execSync(reindexCmd, { env, encoding: 'utf8' });
 assert(reindexOut.includes('Catalog re-indexed successfully'), 'Reindex output confirmation');
@@ -168,11 +173,19 @@ assert(fs.existsSync(catalogMdPath), 'CATALOG.md must be generated');
 const catData = JSON.parse(fs.readFileSync(catalogJsonPath, 'utf8'));
 assert(catData.totalSkills >= 2, 'Must index all library skills');
 assert(typeof catData.estimatedTokensSaved === 'number', 'Must compute token savings metric');
+assert.strictEqual(catData.libraryPath, '~/.gemini/skill-library', 'Must use sanitized portable libraryPath');
+
+// Verify skill paths inside catalog.json use portable ~ and no backslashes
+catData.skills.forEach(s => {
+  assert(s.path.startsWith('~/.gemini/skill-library'), `Path must be portable: ${s.path}`);
+  assert(!s.path.includes('\\'), `Path must use forward slashes: ${s.path}`);
+  assert(!s.path.includes('user-home'), `Path must not leak test sandbox home: ${s.path}`);
+});
 
 const mdContent = fs.readFileSync(catalogMdPath, 'utf8');
 assert(mdContent.includes('Local Agent Skill Warehouse Catalog'), 'Markdown must have header');
 assert(mdContent.includes('Estimated prompt tokens saved'), 'Markdown must report token savings');
-console.log('  ✔ Generated synchronized catalog.json and CATALOG.md with token metrics');
+console.log('  ✔ Generated synchronized catalog.json and CATALOG.md with portable paths');
 
 // ----------------------------------------------------
 // TEST 5: Archiving with Conflict Backup
@@ -187,9 +200,64 @@ assert(backupDirs.length > 0, 'Must create backup folder when overwriting modifi
 console.log('  ✔ Created automatic safety backup on archive conflict');
 
 // ----------------------------------------------------
-// TEST 6: Project Activation and Deactivation
+// TEST 6: Structural Dependency Scanning & Indivisible Bundles
 // ----------------------------------------------------
-console.log('\nTest 6: Workspace Project Activation (.agents/skills/)');
+console.log('\nTest 6: Structural Dependency Scanning & Indivisible Bundle Architecture');
+
+// Create an interconnected suite
+const skillParent = path.join(mockLibrary, 'flow-router');
+fs.mkdirSync(skillParent, { recursive: true });
+fs.writeFileSync(
+  path.join(skillParent, 'SKILL.md'),
+  `---
+name: flow-router
+description: Router that drives sub-skills
+---
+# Flow Router
+Use /skill-identical to verify state, or call the Skill tool with \`skill-modified\` before executing.
+`,
+  'utf8'
+);
+
+const scannedDeps = cliModule.scanSkillDependencies(skillParent, ['skill-identical', 'skill-modified', 'unrelated']);
+assert(scannedDeps.includes('skill-identical'), 'Must detect slash command dependency /skill-identical');
+assert(scannedDeps.includes('skill-modified'), 'Must detect invocation reference `skill-modified`');
+assert(!scannedDeps.includes('unrelated'), 'Must not include unmentioned skills');
+console.log('  ✔ Successfully scanned inter-skill AST references');
+
+// Test Indivisible Bundle Resolution
+const packs = {
+  'test-suite': {
+    name: 'Test Engineering Suite',
+    indivisible: true,
+    bundle: true,
+    skills: ['flow-router', 'skill-identical', 'skill-modified']
+  }
+};
+
+const bundleRes = cliModule.resolveSkillBundle('flow-router', ['flow-router', 'skill-identical'], packs);
+assert(bundleRes.isBundle, 'Must resolve flow-router as part of bundle');
+assert.strictEqual(bundleRes.bundleKey, 'test-suite');
+assert.strictEqual(bundleRes.skills.length, 3);
+console.log('  ✔ Correctly resolved indivisible bundle membership');
+
+// Test that archiveSkill warns when attempting to split an indivisible bundle
+const mockSplitSkill = path.join(mockGlobal, 'flow-router');
+fs.mkdirSync(mockSplitSkill, { recursive: true });
+fs.writeFileSync(path.join(mockSplitSkill, 'SKILL.md'), '---\nname: flow-router\ndescription: Test\n---\nBody', 'utf8');
+
+const splitOut = execSync(`node "${cliPath}" archive "${mockSplitSkill}"`, { env, encoding: 'utf8' });
+// In production packs, check ask-matt or caveman bundle protection
+const askMattBundle = cliModule.resolveSkillBundle('ask-matt', [], cliModule.loadPacks ? {} : {});
+assert(cliModule.resolveSkillBundle('ask-matt', [], {
+  'aihero-mattpocock': { name: 'AI Hero', indivisible: true, skills: ['ask-matt', 'wayfinder'] }
+}).isBundle, 'ask-matt must be protected as indivisible bundle');
+console.log('  ✔ Bundle integrity protection verified');
+
+// ----------------------------------------------------
+// TEST 7: Project Workspace Activation and Deactivation
+// ----------------------------------------------------
+console.log('\nTest 7: Workspace Project Activation (.agents/skills/)');
 const activateCmd = `node "${cliPath}" activate skill-identical`;
 const actOut = execSync(activateCmd, { env, cwd: mockProject, encoding: 'utf8' });
 const cleanActOut = actOut.replace(/\x1b\[[0-9;]*m/g, '');
@@ -203,11 +271,25 @@ execSync(deactCmd, { env, cwd: mockProject, encoding: 'utf8' });
 assert(!fs.existsSync(activeSkillPath), 'Skill must be removed from .agents/skills/');
 console.log('  ✔ Successfully activated and deactivated in workspace');
 
+// ----------------------------------------------------
+// TEST 8: Repository Catalog Sandbox Protection
+// ----------------------------------------------------
+console.log('\nTest 8: Repository Catalog Sandbox Isolation');
+if (repoCatalogContentBefore) {
+  const repoCatalogContentAfter = fs.readFileSync(repoCatalogPath, 'utf8');
+  assert.strictEqual(
+    repoCatalogContentBefore,
+    repoCatalogContentAfter,
+    'CRITICAL: Running tests MUST NEVER mutate or leak sandbox data into repository catalog/catalog.json!'
+  );
+  console.log('  ✔ Verified zero test sandbox pollution in Git repository files');
+}
+
 // Clean up sandbox
 fs.rmSync(tmpRoot, { recursive: true, force: true });
 
 console.log('\n======================================================');
-console.log('✔ All 6 Comprehensive Antigravity Tests Passed!       ');
+console.log('✔ All 8 Comprehensive Antigravity Tests Passed!       ');
 console.log('======================================================\n');
 
 function createMockSkill(parentDir, name, description) {

@@ -30,4 +30,8 @@ _Avoid_: Skill mounting, skill loading, skill injection
 
 **Skill Pack**:
 A curated group of complementary skills that can be activated together as a unit (e.g. `stitch-pack`, `gcp-pack`, `bio-pack`).
-_Avoid_: Skill bundle, plugin suite
+_Avoid_: Plugin suite
+
+**Indivisible Skill Bundle**:
+A cohesive ecosystem of interconnected skills (e.g. `aihero-mattpocock`, `caveman`) that call each other at runtime via slash commands, relative links, or agent delegations. They must always move or remain intact together to prevent broken runtime dependencies.
+_Avoid_: Monolithic skill, skill folder

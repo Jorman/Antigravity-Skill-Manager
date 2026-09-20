@@ -98,16 +98,18 @@ When the user asks:
 When the user says:
 - *"Activate Stitch for this project"* / *"Enable BigQuery skills here"*
 - *"Install the react-components skill"* / *"Activate tdd"*
+- *"Activate ask-matt"* / *"Enable Matt Pocock suite"*
 
 **Action:**
 1. Target path: `<project-root>/.agents/skills/<skill-name>`.
 2. Ensure directory exists.
-3. Copy the skill directory recursively from `~/.gemini/skill-library/<skill-name>` into `<project-root>/.agents/skills/<skill-name>`.
-4. Or use the CLI:
+3. **Indivisible Bundle Awareness**: If the requested skill belongs to an interconnected ecosystem (e.g. Matt Pocock / AI Hero suite or Caveman), activate all connected skills together using `--bundle` so the agent doesn't suffer broken runtime references.
+4. Copy the skill directory recursively from `~/.gemini/skill-library/<skill-name>` into `<project-root>/.agents/skills/<skill-name>`.
+5. Or use the CLI:
    ```bash
-   node <path-to-skill-manager>/bin/skill-manager.cjs activate <name-or-pack>
+   node <path-to-skill-manager>/bin/skill-manager.cjs activate <name-or-pack> [--bundle]
    ```
-5. **Advise on Session Reload**:
+6. **Advise on Session Reload**:
    - Remind the user: *"Skill activated! To have it loaded into the prompt, start a new conversation turn or reload Antigravity (`Ctrl+R`)."*
 
 > [!NOTE]

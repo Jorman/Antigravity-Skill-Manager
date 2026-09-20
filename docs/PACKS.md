@@ -65,9 +65,43 @@ Skill packs are curated bundles of complementary skills defined in `catalog/pack
 
 ---
 
-### 5. `caveman` - Token Efficiency & Brevity
+---
+
+### 5. `aihero-mattpocock` - AI Hero & Matt Pocock Engineering Suite `[Indivisible Bundle]`
+- **Description**: Comprehensive engineering discipline from aihero.dev and github.com/mattpocock/skills: Socratic grilling, roadmap charts, spec & tickets, TDD, code review, systematic bug diagnosis, deep-module architecture, and multi-session workflows.
+- **Tags**: `aihero`, `mattpocock`, `engineering`, `spec`, `tdd`, `review`, `grilling`, `architecture`
+- **Indivisible Bundle**: `true` (Skills in this suite call each other at runtime; they must always move or stay together).
+- **Included Skills (36)**:
+  - `ask-matt`: Central router and situational workflow selector
+  - `setup-matt-pocock-skills`: Issue tracker and triage vocabulary configurator
+  - `wayfinder`: Roadmap charting with linked decision tickets
+  - `grill-with-docs`, `grill-me`, `grilling`: Socratic questioning and domain alignment
+  - `domain-modeling`: Ubiquitous glossary and ADR records
+  - `codebase-design`: Deep-module interface architecture
+  - `to-spec`, `to-tickets`, `to-questionnaire`: Plan and ticket decomposition
+  - `implement`, `implement-spec`: Spec-driven execution
+  - `tdd`: Red-green-refactor test loops
+  - `code-review`: Two-axis diff review (Standards + Spec)
+  - `prototype`: Throwaway program prototyping
+  - `diagnosing-bugs`: Tight feedback loop debugging
+  - `resolving-merge-conflicts`: Intent-based merge conflict resolution
+  - `retro`: Session retrospective and learning capture
+  - `triage`: Multi-stage issue triage
+  - `wait-what`: Context recovery and explanation reboot
+  - `wizard`: Interactive human-in-the-loop setup wizard
+  - `improve-codebase-architecture`: Architecture deepening survey
+  - `writing-for-agents`, `writing-beats`, `writing-fragments`, `writing-shape`: Agent document authoring
+  - `teach`: Stateful concept teaching workspace
+  - `research`: Background primary-source research agent
+  - `handoff`, `claude-handoff`: Portable context handoff documents
+  - `loop-me`, `deming-cycle`, `setup-ts-deep-modules`, `setup-pre-commit`, `scaffold-exercises`
+
+---
+
+### 6. `caveman` - Token Efficiency & Brevity `[Indivisible Bundle]`
 - **Description**: Ultra-compact token-efficient communication.
 - **Tags**: `caveman`, `tokens`, `efficiency`, `compression`
+- **Indivisible Bundle**: `true`
 - **Included Skills**:
   - `caveman`, `caveman-commit`, `caveman-compress`, `caveman-help`, `caveman-review`, `caveman-stats`, `cavecrew`
 

@@ -125,8 +125,15 @@ The analyzer dynamically discovers your configured MCP servers (reading `mcp_con
 | :--- | :--- | :--- |
 | **`CORE_SYSTEM`** | Core ecosystem tools (`skill-manager`, `skill-archiver`, `find-skills`) | **Must Keep Global** |
 | **`SAFETY_GUARDRAIL`** | Safety checks, data-loss protection, terminal command interceptors | **Recommended Keep Global** |
+| **`INTERCONNECTED_BUNDLE`** | Cohesive workflow ecosystems (e.g. Matt Pocock / AI Hero suite, Caveman suite) | **Decide at Bundle Level** (Must keep together or archive together) |
 | **`MCP_LINKED`** | Skills calling your configured MCP servers (GitHub, Stripe, Supabase, Stitch, etc.) | **Gentle User Confirmation** (choose global or project) |
-| **`SPECIALIZED`** | Domain skills (React, Docker, Python, BigQuery, Biology, etc.) | **Safe to Archive** (liberates prompt tokens) |
+| **`SPECIALIZED`** | Standalone domain skills (React, Docker, Python, BigQuery, Biology, etc.) | **Safe to Archive** (liberates prompt tokens) |
+
+### 🔗 Structural Dependency & Indivisible Bundles
+Skills in modern agent ecosystems frequently call each other during execution (e.g. `/ask-matt` router calling `/wayfinder`, `/tdd`, `/implement`, `/code-review`).
+- **Zero Orphaned Skills**: Splitting a bundle across global and library locations breaks agent runtime workflows.
+- **Indivisible Suites**: Ecosystems like **AI Hero & Matt Pocock Engineering Suite** (36 skills) and **Caveman** (7 skills) are treated as atomic units. If a router skill is kept, the entire suite remains intact together.
+- **Bundle CLI**: Inspect bundles with `skill-manager bundles` or `skill-manager bundle <name>`.
 
 ### 🔍 Deep Duplicate Detection (SHA-256)
 - **`IDENTICAL`**: Checksums match 100%. Safe to delete global copy immediately because an identical copy is already stored in the warehouse.
@@ -172,17 +179,25 @@ node ./bin/skill-manager.cjs list
 # List available curated packs
 node ./bin/skill-manager.cjs packs
 
+# List indivisible bundles and inspect member skills
+node ./bin/skill-manager.cjs bundles
+node ./bin/skill-manager.cjs bundle ask-matt
+
 # Activate a skill for current project (.agents/skills/)
 node ./bin/skill-manager.cjs activate react-components
 
-# Activate an entire pack for current project
+# Activate an entire pack or indivisible bundle for current project
 node ./bin/skill-manager.cjs activate stitch-ui
+node ./bin/skill-manager.cjs activate aihero-mattpocock
 
 # Deactivate / remove a skill from current project
 node ./bin/skill-manager.cjs deactivate react-components
 
 # Ingest an external skill folder into warehouse and reindex
 node ./bin/skill-manager.cjs archive /path/to/my-skill
+
+# Archive an entire indivisible bundle together
+node ./bin/skill-manager.cjs archive /path/to/ask-matt --bundle
 
 # Rebuild catalog.json and CATALOG.md
 node ./bin/skill-manager.cjs reindex
@@ -197,11 +212,12 @@ node ./bin/skill-manager.cjs status
 
 | Pack | Focus Area | Skills Included |
 | :--- | :--- | :--- |
+| `aihero-mattpocock` `[Bundle]` | AI Hero & Matt Pocock Engineering | `ask-matt`, `setup-matt-pocock-skills`, `wayfinder`, `grill-with-docs`, `grill-me`, `grilling`, `domain-modeling`, `codebase-design`, `to-spec`, `to-tickets`, `implement`, `tdd`, `code-review`, `prototype`, `diagnosing-bugs`, `resolving-merge-conflicts`, `triage`, `retro`, `wizard`, `teach`, `research`, etc. (36 skills) |
 | `stitch-ui` | Google Stitch & UI Design | `code-to-design`, `design-md`, `enhance-prompt`, `extract-design-md`, `generate-design`, `manage-design-system`, `react-components`, `react-native`, `react-vite-dashboard`, `remotion`, `shadcn-ui`, `taste-design`, `upload-to-stitch` |
 | `gcp-bigquery` | GCP & BigQuery Data Eng | `bigquery-data-transfer-service`, `building-data-apps`, `data-autocleaning`, `dataform-bigquery`, `dbt-bigquery`, `developing-with-bigquery`, `gcp-data-pipelines`, `gcp-dataflow`, `gcp-spark`, `ml-best-practices` |
 | `bio-research` | Bioinformatics & ML | `alphafold2`, `boltz`, `borzoi`, `chai1`, `diffdock`, `esmfold2`, `evo2`, `fair-esm2`, `ligandmpnn`, `openfold3`, `proteinmpnn`, `scgpt`, `scvi-tools`, `deep-research`, `modal-compute`, `runpod-compute` |
 | `dev-workflow` | Quality & Testing | `tdd`, `code-review`, `deming-cycle`, `diagnosing-bugs`, `resolving-merge-conflicts`, `setup-pre-commit` |
-| `caveman` | Token Compression | `caveman`, `caveman-commit`, `caveman-compress`, `caveman-help`, `caveman-review`, `caveman-stats`, `cavecrew` |
+| `caveman` `[Bundle]` | Token Compression | `caveman`, `caveman-commit`, `caveman-compress`, `caveman-help`, `caveman-review`, `caveman-stats`, `cavecrew` |
 | `agent-authoring`| Prompt & Skill Writing | `writing-for-agents`, `writing-beats`, `writing-fragments`, `writing-shape`, `skill-creator` |
 
 ---

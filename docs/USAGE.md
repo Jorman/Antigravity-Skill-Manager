@@ -55,17 +55,25 @@ node ./bin/skill-manager.cjs list
 # List curated skill packs
 node ./bin/skill-manager.cjs packs
 
+# List indivisible bundles and inspect member skills
+node ./bin/skill-manager.cjs bundles
+node ./bin/skill-manager.cjs bundle ask-matt
+
 # Activate a skill in the current project (.agents/skills/)
 node ./bin/skill-manager.cjs activate react-components
 
-# Activate an entire pack in the current project
+# Activate an entire pack or indivisible bundle in the current project
 node ./bin/skill-manager.cjs activate stitch-ui
+node ./bin/skill-manager.cjs activate aihero-mattpocock
 
 # Deactivate a skill from the current project
 node ./bin/skill-manager.cjs deactivate react-components
 
 # Ingest an external skill into the warehouse
 node ./bin/skill-manager.cjs archive /path/to/my-custom-skill
+
+# Archive an entire indivisible bundle together
+node ./bin/skill-manager.cjs archive /path/to/ask-matt --bundle
 
 # Rebuild catalog.json and CATALOG.md
 node ./bin/skill-manager.cjs reindex

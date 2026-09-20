@@ -85,8 +85,10 @@ To combine human/agent readability with algorithmic speed, Skill-Manager generat
 
 ## Intelligent Migration & Safety Engine
 
-When cleaning up an existing environment with dozens of skills, the migration engine applies a 3-tier heuristic:
+When cleaning up an existing environment with dozens of skills, the migration engine applies a 5-tier heuristic:
 
 1. **Core Essentials**: Automatically preserved in global (`skill-manager`, `skill-archiver`, `find-skills`).
-2. **Important / Cautionary Skills**: Identified by analyzing MCP server calls (`call_mcp_tool`) or safety guardrail terms. The user is prompted gently with the rationale before moving.
-3. **Specialized Skills**: Safely migrated to the warehouse, freeing prompt tokens immediately.
+2. **Safety Guardrails**: Automatically preserved in global (`accidental-data-loss-prevention`, execution safety).
+3. **Interconnected Ecosystem Bundles (`INTERCONNECTED_BUNDLE`)**: Cohesive workflow suites (e.g. AI Hero & Matt Pocock 36-skill suite, Caveman). These skills call each other during runtime execution (e.g. `/ask-matt` calling `/wayfinder`, `/tdd`, `/implement`). They must move or remain intact together as an indivisible bundle to prevent broken runtime references.
+4. **Important / Cautionary MCP Skills**: Identified by analyzing configured MCP server connections (`github`, `stripe`, `supabase`, `graphify`, etc.). The user is prompted gently with the rationale before moving.
+5. **Specialized Domain Skills**: Safely migrated to the warehouse, freeing prompt tokens immediately.

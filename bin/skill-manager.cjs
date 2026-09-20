@@ -7,7 +7,8 @@
  * Zero external dependencies - pure Node.js built-ins.
  * Fully cross-platform (Windows, macOS, Linux) with dynamic user home resolution.
  * Completely dynamic: Zero hardcoded skill names, dynamically inspects user's MCP configurations,
- * detects duplicates, and provides intelligent token-saving advice.
+ * detects duplicates, enforces indivisible skill bundles & dependency graphs,
+ * and provides intelligent token-saving advice.
  */
 
 const fs = require('fs');
@@ -21,6 +22,18 @@ const readline = require('readline');
 // ==========================================
 function getUserHome() {
   return os.homedir();
+}
+
+function sanitizePath(p) {
+  if (!p) return '';
+  const home = getUserHome();
+  let sanitized = p;
+  if (sanitized.startsWith(home)) {
+    sanitized = '~' + sanitized.slice(home.length);
+  } else if (sanitized.toLowerCase().startsWith(home.toLowerCase())) {
+    sanitized = '~' + sanitized.slice(home.length);
+  }
+  return sanitized.replace(/\\/g, '/');
 }
 
 function getLibraryPath() {
@@ -170,6 +183,115 @@ function compareSkillDirectories(sourceDir, targetDir) {
 }
 
 // ==========================================
+// Packs Loader
+// ==========================================
+function loadPacks() {
+  const packsPath = getPacksFilePath();
+  if (!packsPath) return {};
+
+  try {
+    const raw = fs.readFileSync(packsPath, 'utf8');
+    const parsed = JSON.parse(raw);
+    return parsed.packs || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+// ==========================================
+// Structural Dependency & Bundle Engine
+// ==========================================
+function scanSkillDependencies(skillDir, allKnownSkills = []) {
+  const dependencies = new Set();
+  if (!fs.existsSync(skillDir)) return [];
+
+  let candidateFiles = [];
+  try {
+    const entries = fs.readdirSync(skillDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isFile() && entry.name.endsWith('.md')) {
+        candidateFiles.push(path.join(skillDir, entry.name));
+      }
+    }
+  } catch (_) {
+    return [];
+  }
+
+  const currentSkillName = path.basename(skillDir).toLowerCase();
+  const knownLookup = new Map();
+  for (const s of allKnownSkills) {
+    if (s.toLowerCase() !== currentSkillName) {
+      knownLookup.set(s.toLowerCase(), s);
+    }
+  }
+
+  for (const file of candidateFiles) {
+    try {
+      const content = fs.readFileSync(file, 'utf8');
+
+      // 1. Slash commands: /skill-name
+      const slashMatches = content.matchAll(/\/([a-z0-9_-]{3,})/gi);
+      for (const m of slashMatches) {
+        const target = m[1].toLowerCase();
+        if (knownLookup.has(target)) {
+          dependencies.add(knownLookup.get(target));
+        }
+      }
+
+      // 2. Relative markdown links: ../skill-name/SKILL.md or skills/.../skill-name
+      const linkMatches = content.matchAll(/(?:\.\.\/|skills\/[^\/]+\/)([a-z0-9_-]+)\/SKILL\.md/gi);
+      for (const m of linkMatches) {
+        const target = m[1].toLowerCase();
+        if (knownLookup.has(target)) {
+          dependencies.add(knownLookup.get(target));
+        }
+      }
+
+      // 3. Explicit Skill invocations: "Skill tool with `skill-name`" or "skill `skill-name`"
+      const invokeMatches = content.matchAll(/(?:skill|Skill tool with|run|use)\s+[`"']([a-z0-9_-]+)[`"']/gi);
+      for (const m of invokeMatches) {
+        const target = m[1].toLowerCase();
+        if (knownLookup.has(target)) {
+          dependencies.add(knownLookup.get(target));
+        }
+      }
+    } catch (_) {}
+  }
+
+  return Array.from(dependencies).sort();
+}
+
+function resolveSkillBundle(skillName, allSkillsList = [], packs = {}) {
+  const target = skillName.toLowerCase();
+
+  // 1. Check pack definitions with indivisible: true or bundle: true
+  for (const [packKey, pack] of Object.entries(packs)) {
+    if (pack.indivisible === true || pack.bundle === true) {
+      const packSkills = (pack.skills || []).map(s => s.toLowerCase());
+      if (packSkills.includes(target)) {
+        return {
+          isBundle: true,
+          bundleKey: packKey,
+          bundleName: pack.name,
+          indivisible: true,
+          skills: pack.skills,
+          reason: `Part of indivisible ecosystem "${pack.name}". These ${pack.skills.length} skills call each other during execution and must remain together.`
+        };
+      }
+    }
+  }
+
+  return {
+    isBundle: false,
+    bundleKey: null,
+    bundleName: null,
+    indivisible: false,
+    skills: [skillName],
+    reason: null
+  };
+}
+
+// ==========================================
 // Metadata & Frontmatter Extraction
 // ==========================================
 function parseYamlFrontmatter(content) {
@@ -200,7 +322,7 @@ function parseYamlFrontmatter(content) {
   return { name, description };
 }
 
-function extractSkillMetadata(skillDir, configuredMcpServers = []) {
+function extractSkillMetadata(skillDir, configuredMcpServers = [], allKnownSkills = [], packs = {}) {
   const skillName = path.basename(skillDir);
   const skillMdPath = path.join(skillDir, 'SKILL.md');
 
@@ -221,7 +343,6 @@ function extractSkillMetadata(skillDir, configuredMcpServers = []) {
   }
 
   // Dynamic MCP detection:
-  // 1. Check against user's configured MCP servers
   const linkedMcpServers = [];
   const lowerContent = rawContent.toLowerCase();
 
@@ -232,39 +353,31 @@ function extractSkillMetadata(skillDir, configuredMcpServers = []) {
     }
   }
 
-  // 2. Generic MCP invocation
+  // Generic MCP invocation
   const hasGenericMcp =
     lowerContent.includes('call_mcp_tool') ||
     lowerContent.includes('mcp_') ||
     lowerContent.includes('mcp server') ||
     lowerContent.includes('mcp tools');
 
+  // Inter-skill dependencies & bundle
+  const dependencies = scanSkillDependencies(skillDir, allKnownSkills);
+  const bundle = resolveSkillBundle(skillName, allKnownSkills, packs);
+
   return {
     name,
     folderName: skillName,
     description,
-    path: skillDir,
+    path: sanitizePath(skillDir),
     tokenEstimate,
     mcpRelated: linkedMcpServers.length > 0 || hasGenericMcp,
     linkedMcpServers: Array.from(new Set(linkedMcpServers)),
-    hasGenericMcp
+    hasGenericMcp,
+    dependencies,
+    isBundle: bundle.isBundle,
+    bundleKey: bundle.bundleKey,
+    bundleName: bundle.bundleName
   };
-}
-
-// ==========================================
-// Packs Loader
-// ==========================================
-function loadPacks() {
-  const packsPath = getPacksFilePath();
-  if (!packsPath) return {};
-
-  try {
-    const raw = fs.readFileSync(packsPath, 'utf8');
-    const parsed = JSON.parse(raw);
-    return parsed.packs || {};
-  } catch (_) {
-    return {};
-  }
 }
 
 // ==========================================
@@ -276,8 +389,8 @@ const CORE_SYSTEM_SKILLS = new Set([
   'find-skills'
 ]);
 
-function analyzeSkill(skillDir, libraryDir, configuredMcpServers) {
-  const meta = extractSkillMetadata(skillDir, configuredMcpServers);
+function analyzeSkill(skillDir, libraryDir, configuredMcpServers, packs = {}, allKnownSkills = []) {
+  const meta = extractSkillMetadata(skillDir, configuredMcpServers, allKnownSkills, packs);
   const warehousePath = path.join(libraryDir, meta.folderName);
   const dupComparison = compareSkillDirectories(skillDir, warehousePath);
 
@@ -307,21 +420,29 @@ function analyzeSkill(skillDir, libraryDir, configuredMcpServers) {
     reason = 'Execution safety or data-loss guardrail protecting terminal commands. Recommended to keep global.';
     severity = 'warning';
   }
-  // 3. Linked to Configured MCP Server
+  // 3. Interconnected Indivisible Bundle Ecosystem
+  else if (meta.isBundle) {
+    category = 'INTERCONNECTED_BUNDLE';
+    recommendation = 'BUNDLE_DECISION';
+    reason = `Part of indivisible suite "${meta.bundleName}". Interconnected skills call each other and MUST move or stay together.`;
+    severity = 'warning';
+  }
+  // 4. Linked to Configured MCP Server
   else if (meta.linkedMcpServers.length > 0) {
     category = 'MCP_LINKED';
     recommendation = 'CONFIRM_USER';
     reason = `Directly integrates with configured MCP server(s): [${meta.linkedMcpServers.join(', ')}]. If used across all projects, keep global. If used only for specific projects, archive.`;
     severity = 'warning';
   }
-  // 4. Generic MCP Reference
+  // 5. Generic MCP Reference
   else if (meta.hasGenericMcp) {
     category = 'MCP_GENERIC';
     recommendation = 'CONFIRM_USER';
     reason = 'References MCP server or tool execution. Ask user preference before archiving.';
     severity = 'warning';
   }
-  // 5. Duplicate Check
+
+  // Duplicate Check note
   if (dupComparison.status === 'IDENTICAL') {
     reason += ' (Note: An identical copy is ALREADY safely stored in the library warehouse).';
   } else if (dupComparison.status === 'MODIFIED') {
@@ -343,10 +464,26 @@ function analyzeAllGlobalSkills() {
   const globalDir = getGlobalSkillsPath();
   const libraryDir = getLibraryPath();
   const configuredMcp = getConfiguredMcpServers();
+  const packs = loadPacks();
 
   if (!fs.existsSync(globalDir)) {
     return { total: 0, skills: [], configuredMcp, summary: {} };
   }
+
+  // Gather all known skill names from global and library
+  const knownSkillNames = new Set();
+  const scanDir = (dir) => {
+    if (fs.existsSync(dir)) {
+      try {
+        fs.readdirSync(dir, { withFileTypes: true }).forEach(e => {
+          if (e.isDirectory() && !e.name.startsWith('.')) knownSkillNames.add(e.name);
+        });
+      } catch (_) {}
+    }
+  };
+  scanDir(globalDir);
+  scanDir(libraryDir);
+  const allKnownSkills = Array.from(knownSkillNames);
 
   const entries = fs.readdirSync(globalDir, { withFileTypes: true });
   const skills = [];
@@ -354,15 +491,29 @@ function analyzeAllGlobalSkills() {
   for (const entry of entries) {
     if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
     const skillPath = path.join(globalDir, entry.name);
-    const item = analyzeSkill(skillPath, libraryDir, configuredMcp);
+    const item = analyzeSkill(skillPath, libraryDir, configuredMcp, packs, allKnownSkills);
     skills.push(item);
   }
 
   skills.sort((a, b) => a.name.localeCompare(b.name));
 
+  // Group bundle skills by bundleKey
+  const bundlesMap = {};
+  skills.filter(s => s.category === 'INTERCONNECTED_BUNDLE').forEach(s => {
+    if (!bundlesMap[s.bundleKey]) {
+      bundlesMap[s.bundleKey] = {
+        key: s.bundleKey,
+        name: s.bundleName,
+        skills: []
+      };
+    }
+    bundlesMap[s.bundleKey].skills.push(s);
+  });
+
   const summary = {
     core: skills.filter(s => s.category === 'CORE_SYSTEM'),
     safety: skills.filter(s => s.category === 'SAFETY_GUARDRAIL'),
+    bundles: Object.values(bundlesMap),
     mcp: skills.filter(s => s.category === 'MCP_LINKED' || s.category === 'MCP_GENERIC'),
     specialized: skills.filter(s => s.category === 'SPECIALIZED'),
     identicalInWarehouse: skills.filter(s => s.duplicateStatus === 'IDENTICAL'),
@@ -385,21 +536,23 @@ function reindexCatalog(options = {}) {
   const libraryDir = getLibraryPath();
   const configuredMcp = getConfiguredMcpServers();
   const verbose = options.verbose !== false;
+  const packs = loadPacks();
 
   if (!fs.existsSync(libraryDir)) {
     fs.mkdirSync(libraryDir, { recursive: true });
   }
 
   const entries = fs.readdirSync(libraryDir, { withFileTypes: true });
+  const allKnownSkills = entries.filter(e => e.isDirectory() && !e.name.startsWith('.')).map(e => e.name);
+
   const skills = [];
-  const packs = loadPacks();
 
   for (const entry of entries) {
     if (entry.isDirectory()) {
       if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
 
       const skillPath = path.join(libraryDir, entry.name);
-      const meta = extractSkillMetadata(skillPath, configuredMcp);
+      const meta = extractSkillMetadata(skillPath, configuredMcp, allKnownSkills, packs);
 
       // Match with packs
       const matchedPacks = [];
@@ -418,26 +571,34 @@ function reindexCatalog(options = {}) {
 
   const totalEstimatedTokens = skills.reduce((acc, s) => acc + s.tokenEstimate, 0);
 
-  // 1. catalog.json
+  // 1. catalog.json (Sanitized and Portable)
   const catalogJson = {
     version: '1.0.0',
     generatedAt: new Date().toISOString(),
-    libraryPath: libraryDir,
+    libraryPath: '~/.gemini/skill-library',
     configuredMcpServers: configuredMcp,
     totalSkills: skills.length,
     estimatedTokensSaved: totalEstimatedTokens,
     packs: Object.keys(packs),
-    skills
+    skills: skills.map(s => ({
+      ...s,
+      path: `~/.gemini/skill-library/${s.folderName}`
+    }))
   };
 
   const jsonFilePath = path.join(libraryDir, 'catalog.json');
   fs.writeFileSync(jsonFilePath, JSON.stringify(catalogJson, null, 2), 'utf8');
 
-  // Also sync to repository if inside repo
+  // Sync to repo catalog ONLY if not in test sandbox and repo directory exists
+  const isTestOrCustom = !!(process.env.ANTIGRAVITY_SKILL_LIBRARY || process.env.NODE_ENV === 'test');
   const repoCatalogJson = path.join(__dirname, '..', 'catalog', 'catalog.json');
-  if (fs.existsSync(path.dirname(repoCatalogJson))) {
+  if (!isTestOrCustom && fs.existsSync(path.dirname(repoCatalogJson))) {
     try {
-      fs.writeFileSync(repoCatalogJson, JSON.stringify(catalogJson, null, 2), 'utf8');
+      const cleanRepoCatalog = {
+        ...catalogJson,
+        configuredMcpServers: [] // Zero host-specific MCP servers in repo
+      };
+      fs.writeFileSync(repoCatalogJson, JSON.stringify(cleanRepoCatalog, null, 2), 'utf8');
     } catch (_) {}
   }
 
@@ -455,37 +616,40 @@ function reindexCatalog(options = {}) {
 
   // Render Packs
   for (const [packKey, pack] of Object.entries(packs)) {
-    mdContent += `### 📦 Pack: ${pack.name} (\`${packKey}\`)\n`;
+    const indivisibleTag = pack.indivisible ? ' `[Indivisible Bundle]`' : '';
+    mdContent += `### 📦 Pack: ${pack.name} (\`${packKey}\`)${indivisibleTag}\n`;
     mdContent += `${pack.description}\n\n`;
     mdContent += `*Tags:* \`${pack.tags.join('`, `')}\`\n\n`;
-    mdContent += `| Skill | MCP | Description |\n`;
-    mdContent += `| :--- | :---: | :--- |\n`;
+    mdContent += `| Skill | MCP | Dependencies | Description |\n`;
+    mdContent += `| :--- | :---: | :--- | :--- |\n`;
 
     for (const skillName of pack.skills) {
       const found = skills.find(s => s.folderName === skillName);
       const desc = found ? found.description : 'Specialized pack skill';
       const mcpBadge = found && found.mcpRelated ? (found.linkedMcpServers.length ? `⚡ ${found.linkedMcpServers.join(',')}` : '⚡ MCP') : '-';
-      mdContent += `| \`${skillName}\` | ${mcpBadge} | ${desc.replace(/\|/g, '\\|')} |\n`;
+      const depBadge = found && found.dependencies && found.dependencies.length ? `\`${found.dependencies.slice(0, 3).join('`, `')}${found.dependencies.length > 3 ? '...' : ''}\`` : '-';
+      mdContent += `| \`${skillName}\` | ${mcpBadge} | ${depBadge} | ${desc.replace(/\|/g, '\\|')} |\n`;
     }
     mdContent += `\n---\n\n`;
   }
 
   // Render All Skills Table
   mdContent += `## 📚 All Indexed Skills (${skills.length})\n\n`;
-  mdContent += `| Skill | MCP Dependency | Packs | Description |\n`;
-  mdContent += `| :--- | :---: | :--- | :--- |\n`;
+  mdContent += `| Skill | MCP | Bundle | Packs | Description |\n`;
+  mdContent += `| :--- | :---: | :---: | :--- | :--- |\n`;
 
   for (const s of skills) {
     const mcpBadge = s.mcpRelated ? (s.linkedMcpServers.length ? `⚡ ${s.linkedMcpServers.join(', ')}` : '⚡ MCP') : '-';
+    const bundleBadge = s.isBundle ? `📦 \`${s.bundleKey}\`` : '-';
     const packsBadge = s.packs.length > 0 ? s.packs.map(p => `\`${p}\``).join(' ') : '-';
-    mdContent += `| \`${s.name}\` | ${mcpBadge} | ${packsBadge} | ${s.description.replace(/\|/g, '\\|')} |\n`;
+    mdContent += `| \`${s.name}\` | ${mcpBadge} | ${bundleBadge} | ${packsBadge} | ${s.description.replace(/\|/g, '\\|')} |\n`;
   }
 
   const mdFilePath = path.join(libraryDir, 'CATALOG.md');
   fs.writeFileSync(mdFilePath, mdContent, 'utf8');
 
   const repoCatalogMd = path.join(__dirname, '..', 'catalog', 'CATALOG.md');
-  if (fs.existsSync(path.dirname(repoCatalogMd))) {
+  if (!isTestOrCustom && fs.existsSync(path.dirname(repoCatalogMd))) {
     try {
       fs.writeFileSync(repoCatalogMd, mdContent, 'utf8');
     } catch (_) {}
@@ -548,7 +712,15 @@ function activateSkillOrPack(targetName, options = {}) {
     skillsToActivate = packs[targetName].skills;
     console.log(`\x1b[36mActivating pack "${targetName}" (${skillsToActivate.length} skills)...\x1b[0m`);
   } else {
-    skillsToActivate = [targetName];
+    // Check if skill belongs to an indivisible bundle
+    const bundle = resolveSkillBundle(targetName, [], packs);
+    if (bundle.isBundle && (options.bundle || bundle.indivisible)) {
+      console.log(`\x1b[33mNotice: "${targetName}" belongs to indivisible bundle "${bundle.bundleName}".\x1b[0m`);
+      console.log(`Activating all ${bundle.skills.length} connected skills together to ensure runtime integrity...\n`);
+      skillsToActivate = bundle.skills;
+    } else {
+      skillsToActivate = [targetName];
+    }
   }
 
   let successCount = 0;
@@ -585,20 +757,33 @@ function activateSkillOrPack(targetName, options = {}) {
 function deactivateSkill(targetName, options = {}) {
   const isGlobal = options.global === true;
   const targetRoot = isGlobal ? getGlobalSkillsPath() : getProjectSkillsPath();
-  const destinationDir = path.join(targetRoot, targetName);
+  const packs = loadPacks();
 
-  if (!fs.existsSync(destinationDir)) {
-    console.log(`\x1b[33mSkill "${targetName}" is not currently active in ${targetRoot}.\x1b[0m`);
-    return;
+  let targets = [targetName];
+  if (packs[targetName]) {
+    targets = packs[targetName].skills;
+  } else {
+    const bundle = resolveSkillBundle(targetName, [], packs);
+    if (bundle.isBundle && options.bundle) {
+      targets = bundle.skills;
+    }
   }
 
-  try {
-    fs.rmSync(destinationDir, { recursive: true, force: true });
-    console.log(`\x1b[32m✔ Deactivated skill "${targetName}" from ${destinationDir}.\x1b[0m`);
-    printReloadReminder();
-  } catch (err) {
-    console.error(`\x1b[31m✖ Failed to deactivate:\x1b[0m`, err.message);
+  for (const name of targets) {
+    const destinationDir = path.join(targetRoot, name);
+    if (!fs.existsSync(destinationDir)) {
+      console.log(`\x1b[33mSkill "${name}" is not currently active in ${targetRoot}.\x1b[0m`);
+      continue;
+    }
+
+    try {
+      fs.rmSync(destinationDir, { recursive: true, force: true });
+      console.log(`\x1b[32m✔ Deactivated skill "${name}" from ${destinationDir}.\x1b[0m`);
+    } catch (err) {
+      console.error(`\x1b[31m✖ Failed to deactivate ${name}:\x1b[0m`, err.message);
+    }
   }
+  printReloadReminder();
 }
 
 // ==========================================
@@ -607,6 +792,7 @@ function deactivateSkill(targetName, options = {}) {
 function archiveSkill(sourcePath, options = {}) {
   const libraryDir = getLibraryPath();
   const absSource = path.resolve(sourcePath);
+  const packs = loadPacks();
 
   if (!fs.existsSync(absSource)) {
     console.log(`\x1b[31mSource skill path does not exist: ${absSource}\x1b[0m`);
@@ -614,33 +800,55 @@ function archiveSkill(sourcePath, options = {}) {
   }
 
   const skillName = path.basename(absSource);
-  const targetDir = path.join(libraryDir, skillName);
+  const bundle = resolveSkillBundle(skillName, [], packs);
 
-  const cmp = compareSkillDirectories(absSource, targetDir);
+  // Bundle integrity check
+  if (bundle.isBundle && !options.bundle && !options.force) {
+    console.log(`\n\x1b[33m⚠️ WARNING: "${skillName}" is part of an Indivisible Skill Bundle:\x1b[0m`);
+    console.log(`  Bundle: \x1b[1m${bundle.bundleName}\x1b[0m (${bundle.skills.length} connected skills)`);
+    console.log(`  \x1b[90mThese skills call each other at runtime (e.g. /wayfinder, /tdd, /implement).\x1b[0m`);
+    console.log(`  \x1b[90mArchiving only this skill will break the workflow of the remaining active skills.\x1b[0m\n`);
+    console.log(`  To archive the entire connected bundle together, run:`);
+    console.log(`    \x1b[36mskill-manager archive "${sourcePath}" --bundle\x1b[0m\n`);
+    console.log(`  To override and archive only this folder, use: \x1b[90m--force\x1b[0m\n`);
+    return;
+  }
 
-  if (cmp.status === 'IDENTICAL' && !options.force) {
-    console.log(`\x1b[33mNotice: "${skillName}" already exists identically in the warehouse.\x1b[0m`);
-  } else if (cmp.status === 'MODIFIED') {
-    console.log(`\x1b[33mWarning: "${skillName}" already exists in warehouse with different content (${cmp.diff}).\x1b[0m`);
-    if (options.backup) {
-      const backupDir = path.join(libraryDir, `${skillName}.backup-${Date.now()}`);
-      copyDirSync(targetDir, backupDir);
-      console.log(`  \x1b[36mCreated backup at: ${backupDir}\x1b[0m`);
+  const skillsToArchive = (bundle.isBundle && options.bundle) ? bundle.skills : [skillName];
+  const globalPath = getGlobalSkillsPath();
+
+  for (const sName of skillsToArchive) {
+    let srcDir = absSource;
+    if (sName !== skillName) {
+      srcDir = path.join(globalPath, sName);
+      if (!fs.existsSync(srcDir)) continue;
+    }
+
+    const targetDir = path.join(libraryDir, sName);
+    const cmp = compareSkillDirectories(srcDir, targetDir);
+
+    if (cmp.status === 'IDENTICAL' && !options.force) {
+      // safe
+    } else if (cmp.status === 'MODIFIED') {
+      if (options.backup) {
+        const backupDir = path.join(libraryDir, `${sName}.backup-${Date.now()}`);
+        copyDirSync(targetDir, backupDir);
+        console.log(`  \x1b[36mCreated backup of existing warehouse version: ${backupDir}\x1b[0m`);
+      }
+    }
+
+    copyDirSync(srcDir, targetDir);
+
+    if (srcDir.startsWith(globalPath)) {
+      try {
+        fs.rmSync(srcDir, { recursive: true, force: true });
+        console.log(`  \x1b[32m✔ Pruned global copy:\x1b[0m ${sName}`);
+      } catch (_) {}
     }
   }
 
-  copyDirSync(absSource, targetDir);
-
-  const globalPath = getGlobalSkillsPath();
-  if (absSource.startsWith(globalPath)) {
-    try {
-      fs.rmSync(absSource, { recursive: true, force: true });
-      console.log(`\x1b[32m✔ Removed from global skills to liberate prompt tokens.\x1b[0m`);
-    } catch (_) {}
-  }
-
   reindexCatalog({ verbose: true });
-  console.log(`\x1b[32m✔ Archived "${skillName}" successfully!\x1b[0m`);
+  console.log(`\n\x1b[32m✔ Successfully archived ${skillsToArchive.length} skill(s) into warehouse!\x1b[0m`);
   printReloadReminder();
 }
 
@@ -706,8 +914,6 @@ function inspectProjectEnvironment(projectDir) {
 
 function recommendSkills(projectDir) {
   const envInfo = inspectProjectEnvironment(projectDir);
-  const catalog = getCatalogData();
-  const packs = loadPacks();
 
   console.log(`\n\x1b[1m══════════════════════════════════════════════════════════════════════════\x1b[0m`);
   console.log(`\x1b[1m                 Antigravity Project Skill Recommendations                \x1b[0m`);
@@ -734,8 +940,8 @@ function recommendSkills(projectDir) {
   if (envInfo.techSignals.includes('testing') || envInfo.techSignals.includes('git')) {
     recommendations.push({
       type: 'pack',
-      target: 'dev-workflow',
-      reason: 'Detected Git repository / testing tooling. Dev-workflow introduces TDD, code-review rigor, and bug diagnostics.'
+      target: 'aihero-mattpocock',
+      reason: 'Detected Git repository / testing tooling. AI Hero & Matt Pocock suite introduces Socratic grilling, spec planning, TDD, and code-review.'
     });
   }
 
@@ -763,7 +969,7 @@ function recommendSkills(projectDir) {
     });
   }
 
-  // Always suggest caveman token efficiency
+  // Suggest caveman token efficiency
   recommendations.push({
     type: 'pack',
     target: 'caveman',
@@ -818,15 +1024,24 @@ async function runMigration(options = {}) {
     console.log(`    \x1b[90m${s.reason}\x1b[0m`);
   });
 
-  // Group 3: MCP Linked
-  console.log(`\n\x1b[35m[3] Configured MCP Integrations - GENTLE USER CONFIRMATION (${analysis.summary.mcp.length}):\x1b[0m`);
+  // Group 3: Interconnected Indivisible Bundles
+  console.log(`\n\x1b[34m[3] Interconnected Ecosystems - INDIVISIBLE BUNDLES (${analysis.summary.bundles.length}):\x1b[0m`);
+  analysis.summary.bundles.forEach(b => {
+    console.log(`  📦 \x1b[1m${b.name}\x1b[0m (\x1b[36m${b.skills.length} active skills\x1b[0m)`);
+    console.log(`     \x1b[90mSkills: ${b.skills.map(s => s.name).slice(0, 6).join(', ')}${b.skills.length > 6 ? '...' : ''}\x1b[0m`);
+    console.log(`     \x1b[33m⚠️ STRUCTURAL INTEGRITY RULE: These skills call each other during execution.\x1b[0m`);
+    console.log(`     \x1b[33mThey MUST be kept together or archived together as an indivisible unit.\x1b[0m`);
+  });
+
+  // Group 4: MCP Linked
+  console.log(`\n\x1b[35m[4] Configured MCP Integrations - GENTLE USER CONFIRMATION (${analysis.summary.mcp.length}):\x1b[0m`);
   analysis.summary.mcp.forEach(s => {
     console.log(`  • \x1b[1m${s.name}\x1b[0m \x1b[33m(Servers: ${s.linkedMcpServers.join(', ') || 'Generic MCP'})\x1b[0m`);
     console.log(`    \x1b[90m${s.reason}\x1b[0m`);
   });
 
-  // Group 4: Specialized
-  console.log(`\n\x1b[36m[4] Specialized Domain Skills - SAFE TO ARCHIVE (${analysis.summary.specialized.length}):\x1b[0m`);
+  // Group 5: Specialized
+  console.log(`\n\x1b[36m[5] Specialized Domain Skills - SAFE TO ARCHIVE (${analysis.summary.specialized.length}):\x1b[0m`);
   console.log(`  \x1b[90mMoving these to the library saves prompt tokens on every turn while keeping them accessible.\x1b[0m`);
 
   // Duplicate analysis
@@ -846,7 +1061,24 @@ async function runMigration(options = {}) {
 
   const question = (str) => new Promise(resolve => rl.question(str, resolve));
 
-  // Step 1: Specialized skills
+  // Step 1: Handle Indivisible Bundles
+  for (const b of analysis.summary.bundles) {
+    console.log('\n----------------------------------------------------------');
+    const promptText = `Archive entire suite "${b.name}" (${b.skills.length} skills) to warehouse? (y/N) [Default: N to keep together globally]: `;
+    const ans = options.yes ? 'n' : await question(promptText);
+    if (ans.toLowerCase() === 'y') {
+      for (const skill of b.skills) {
+        const target = path.join(libraryDir, skill.folderName);
+        copyDirSync(skill.path, target);
+        fs.rmSync(skill.path, { recursive: true, force: true });
+      }
+      console.log(`  \x1b[32m✔ Moved bundle "${b.name}" (${b.skills.length} skills) to warehouse.\x1b[0m`);
+    } else {
+      console.log(`  \x1b[32m✔ Preserved bundle "${b.name}" intact globally (${b.skills.length} skills).\x1b[0m`);
+    }
+  }
+
+  // Step 2: Specialized skills
   if (analysis.summary.specialized.length > 0) {
     console.log('\n----------------------------------------------------------');
     const answer = options.yes ? 'y' : await question(`Archive all ${analysis.summary.specialized.length} specialized domain skills to warehouse? (y/N): `);
@@ -860,7 +1092,7 @@ async function runMigration(options = {}) {
     }
   }
 
-  // Step 2: MCP Linked skills
+  // Step 3: MCP Linked skills
   if (analysis.summary.mcp.length > 0) {
     console.log('\n----------------------------------------------------------');
     console.log('Reviewing MCP-linked skills:');
@@ -878,7 +1110,7 @@ async function runMigration(options = {}) {
     }
   }
 
-  // Step 3: Safety Guardrails
+  // Step 4: Safety Guardrails
   if (analysis.summary.safety.length > 0) {
     console.log('\n----------------------------------------------------------');
     console.log('Safety guardrails: Defaulting to PRESERVE in global.');
@@ -913,6 +1145,7 @@ async function main() {
       console.log(`Detected MCP Servers: \x1b[33m${analysis.configuredMcp.join(', ') || 'None'}\x1b[0m`);
       console.log(`  • Core System:        \x1b[32m${analysis.summary.core.length}\x1b[0m`);
       console.log(`  • Safety Guardrails:  \x1b[33m${analysis.summary.safety.length}\x1b[0m`);
+      console.log(`  • Indivisible Bundles:\x1b[34m${analysis.summary.bundles.length}\x1b[0m`);
       console.log(`  • MCP Linked:         \x1b[35m${analysis.summary.mcp.length}\x1b[0m`);
       console.log(`  • Specialized Domain: \x1b[36m${analysis.summary.specialized.length}\x1b[0m`);
       console.log(`  • Identical in Lib:   \x1b[32m${analysis.summary.identicalInWarehouse.length}\x1b[0m\n`);
@@ -935,6 +1168,39 @@ async function main() {
       break;
     }
 
+    case 'bundle': {
+      const skillName = args[1];
+      if (!skillName) {
+        console.log('\x1b[31mUsage: skill-manager bundle <skill-name>\x1b[0m');
+        process.exit(1);
+      }
+      const packs = loadPacks();
+      const bundle = resolveSkillBundle(skillName, [], packs);
+      if (bundle.isBundle) {
+        console.log(`\n\x1b[1mBundle Info for "${skillName}":\x1b[0m`);
+        console.log(`  Suite Name:   \x1b[36m${bundle.bundleName}\x1b[0m (\`${bundle.bundleKey}\`)`);
+        console.log(`  Indivisible:  \x1b[32mYes\x1b[0m`);
+        console.log(`  Total Skills: \x1b[1m${bundle.skills.length}\x1b[0m`);
+        console.log(`  Members:      \x1b[90m${bundle.skills.join(', ')}\x1b[0m\n`);
+      } else {
+        console.log(`\n"${skillName}" is a standalone skill (not part of an indivisible bundle).\n`);
+      }
+      break;
+    }
+
+    case 'bundles': {
+      const packs = loadPacks();
+      console.log(`\n\x1b[1mIndivisible Skill Bundles & Ecosystems:\x1b[0m\n`);
+      for (const [key, p] of Object.entries(packs)) {
+        if (p.indivisible || p.bundle) {
+          console.log(`  📦 \x1b[1m\x1b[36m${key}\x1b[0m: ${p.name}`);
+          console.log(`     ${p.description}`);
+          console.log(`     Connected Skills (${p.skills.length}): \x1b[90m${p.skills.join(', ')}\x1b[0m\n`);
+        }
+      }
+      break;
+    }
+
     case 'search':
     case 'find': {
       const query = args[1];
@@ -954,8 +1220,9 @@ async function main() {
       if (results.length > 0) {
         results.forEach(r => {
           const mcp = r.mcpRelated ? ' \x1b[33m[MCP]\x1b[0m' : '';
+          const b = r.isBundle ? ` \x1b[34m[Bundle: ${r.bundleKey}]\x1b[0m` : '';
           const p = r.packs.length ? ` \x1b[90m(${r.packs.join(', ')})\x1b[0m` : '';
-          console.log(`  • \x1b[1m\x1b[36m${r.name}\x1b[0m${mcp}${p}`);
+          console.log(`  • \x1b[1m\x1b[36m${r.name}\x1b[0m${mcp}${b}${p}`);
           console.log(`    \x1b[90m${r.description}\x1b[0m\n`);
         });
       } else {
@@ -970,8 +1237,9 @@ async function main() {
       console.log(`\n\x1b[1mOffline Skill Warehouse (${cat.totalSkills} skills, ~${cat.estimatedTokensSaved} tokens saved):\x1b[0m\n`);
       cat.skills.forEach(s => {
         const mcp = s.mcpRelated ? ' \x1b[33m[MCP]\x1b[0m' : '';
+        const b = s.isBundle ? ` \x1b[34m[${s.bundleKey}]\x1b[0m` : '';
         const p = s.packs.length ? ` \x1b[90m[${s.packs.join(',')}]\x1b[0m` : '';
-        console.log(`  • \x1b[36m${s.name}\x1b[0m${mcp}${p}`);
+        console.log(`  • \x1b[36m${s.name}\x1b[0m${mcp}${b}${p}`);
       });
       console.log('');
       break;
@@ -981,7 +1249,8 @@ async function main() {
       const packs = loadPacks();
       console.log('\n\x1b[1mAvailable Skill Packs:\x1b[0m\n');
       for (const [key, p] of Object.entries(packs)) {
-        console.log(`  📦 \x1b[1m\x1b[36m${key}\x1b[0m: ${p.name}`);
+        const indivisibleTag = p.indivisible ? ' \x1b[33m[Indivisible Bundle]\x1b[0m' : '';
+        console.log(`  📦 \x1b[1m\x1b[36m${key}\x1b[0m: ${p.name}${indivisibleTag}`);
         console.log(`     ${p.description}`);
         console.log(`     Skills (${p.skills.length}): \x1b[90m${p.skills.join(', ')}\x1b[0m\n`);
       }
@@ -991,30 +1260,40 @@ async function main() {
     case 'activate': {
       const target = args[1];
       if (!target) {
-        console.log('\x1b[31mUsage: skill-manager activate <skill-name|pack-name> [--global]\x1b[0m');
+        console.log('\x1b[31mUsage: skill-manager activate <skill-name|pack-name> [--global] [--bundle]\x1b[0m');
         process.exit(1);
       }
-      activateSkillOrPack(target, { global: args.includes('--global') });
+      activateSkillOrPack(target, {
+        global: args.includes('--global'),
+        bundle: args.includes('--bundle')
+      });
       break;
     }
 
     case 'deactivate': {
       const target = args[1];
       if (!target) {
-        console.log('\x1b[31mUsage: skill-manager deactivate <skill-name> [--global]\x1b[0m');
+        console.log('\x1b[31mUsage: skill-manager deactivate <skill-name> [--global] [--bundle]\x1b[0m');
         process.exit(1);
       }
-      deactivateSkill(target, { global: args.includes('--global') });
+      deactivateSkill(target, {
+        global: args.includes('--global'),
+        bundle: args.includes('--bundle')
+      });
       break;
     }
 
     case 'archive': {
       const target = args[1];
       if (!target) {
-        console.log('\x1b[31mUsage: skill-manager archive <path-to-skill-folder>\x1b[0m');
+        console.log('\x1b[31mUsage: skill-manager archive <path-to-skill-folder> [--bundle] [--backup] [--force]\x1b[0m');
         process.exit(1);
       }
-      archiveSkill(target, { backup: args.includes('--backup'), force: args.includes('--force') });
+      archiveSkill(target, {
+        bundle: args.includes('--bundle'),
+        backup: args.includes('--backup'),
+        force: args.includes('--force')
+      });
       break;
     }
 
@@ -1055,7 +1334,9 @@ async function main() {
 
 \x1b[1mCOMMANDS:\x1b[0m
   \x1b[36mrecommend [dir]\x1b[0m          Inspect project tech stack and recommend relevant skills/packs
-  \x1b[36manalyze\x1b[0m                  Intelligently inspect global skills, MCP links & token impact
+  \x1b[36manalyze\x1b[0m                  Intelligently inspect global skills, MCP links & indivisible bundles
+  \x1b[36mbundles\x1b[0m                  List all indivisible skill bundles (e.g. AI Hero & Matt Pocock suite)
+  \x1b[36mbundle <name>\x1b[0m            Check if a skill belongs to an indivisible bundle and list members
   \x1b[36mduplicates\x1b[0m               Check for identical or conflicting copies in warehouse
   \x1b[36msearch <keyword>\x1b[0m         Search local warehouse by keyword, tag, or pack
   \x1b[36mactivate <name|pack>\x1b[0m     Activate skill or pack in current project (.agents/skills/)
@@ -1063,8 +1344,8 @@ async function main() {
   \x1b[36mdeactivate <name>\x1b[0m        Remove skill from current project (.agents/skills/)
   \x1b[36mlist\x1b[0m                     List all dormant skills in the warehouse
   \x1b[36mpacks\x1b[0m                    List available curated skill packs
-  \x1b[36mreindex\x1b[0m                  Regenerate catalog.json and CATALOG.md from warehouse
-  \x1b[36marchive <dir>\x1b[0m            Ingest a skill directory into the warehouse and re-index
+  \x1b[36mreindex\x1b[0m                  Regenerate catalog.json and CATALOG.md with portable paths
+  \x1b[36marchive <dir> [--bundle]\x1b[0m Ingest skill or entire bundle into the warehouse and re-index
   \x1b[36mmigrate [--dry-run]\x1b[0m      Analyze, advise, and migrate global skills to warehouse
   \x1b[36mstatus\x1b[0m                   Display library and active skills statistics
   \x1b[36mhelp\x1b[0m                     Show this help screen
@@ -1076,12 +1357,15 @@ async function main() {
 // Export internal functions for unit testing
 module.exports = {
   getUserHome,
+  sanitizePath,
   getLibraryPath,
   getGlobalSkillsPath,
   getProjectSkillsPath,
   getConfiguredMcpServers,
   compareSkillDirectories,
   extractSkillMetadata,
+  scanSkillDependencies,
+  resolveSkillBundle,
   analyzeSkill,
   analyzeAllGlobalSkills,
   reindexCatalog,
