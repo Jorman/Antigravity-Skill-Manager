@@ -1,7 +1,7 @@
 # Local Agent Skill Warehouse Catalog
 
 > Generated on **20/09/2026** by `Antigravity Skill-Manager`.
-> Total dormant skills: **128** | Total packs: **7** | Estimated prompt tokens saved: **~9020 tokens/turn**
+> Total dormant skills: **146** | Total packs: **8** | Estimated prompt tokens saved: **~10.611 tokens/turn**
 
 This catalog indexes all skills stored offline in `~/.gemini/skill-library`.
 These skills remain dormant until summoned for a specific project (`.agents/skills/`) or globally.
@@ -173,6 +173,33 @@ Ultra-compact token-efficient communication and review formats.
 
 ---
 
+### 📦 Pack: Agent Memory & Session Context Suite (`agentmemory`)
+Persistent memory, intelligent search, session handoffs, and learned lessons powered by the agentmemory MCP server.
+
+*Tags:* `memory`, `agentmemory`, `persistence`, `recall`, `remember`, `sessions`, `context`
+
+| Skill | MCP | Dependencies | Description |
+| :--- | :---: | :--- | :--- |
+| `remember` | ⚡ agentmemory | `_shared` | Save an insight, decision, or learning to agentmemory's long-term storage with searchable concept tags. Use when the user says "remember this", "save this", "note that", "don't forget", or wants to preserve knowledge for future sessions. |
+| `recall` | ⚡ agentmemory | `_shared` | Search agentmemory for past observations, sessions, and learnings about a topic using hybrid BM25 plus vector plus graph search. Use when the user says "recall", "what did we do about", "did we ever", "have we seen", or needs context from past sessions. |
+| `recap` | - | `_shared` | Summarize the last N agent sessions for the current project, grouped by date, with highlight observations per session. Use when the user asks "recap", "what have we been doing", "today", "this week", or wants a rollup of recent work. |
+| `forget` | ⚡ agentmemory | `_shared` | Delete specific observations from agentmemory after showing them and getting explicit confirmation. Use when the user says "forget this", "delete memory", "remove that note", or wants to scrub specific data for privacy. |
+| `lesson` | - | `_shared` | Save a correction or hard-won rule as a confidence-weighted lesson that resurfaces before similar work. Use when the user corrects your approach, says "learn this", "always" or "never do X", or you notice yourself repeating a past mistake. |
+| `agentmemory-handoff` | ⚡ agentmemory | `_shared` | Resume the most recent agent session for the current working directory, leading with any unanswered question. Use when the user says "where were we", "resume", "handoff", "pick up where I left off", or starts a session with no fresh context. |
+| `memory-discipline` | ⚡ agentmemory | `_shared` | The session loop that makes agentmemory pay off, recall before starting work, save at decision points, learn from corrections. Use when starting a nontrivial task, after settling a decision or debugging a gotcha, or whenever deciding if something belongs in memory. |
+| `commit-context` | - | `_shared` | Trace a file, function, or line back to the agent session that produced its current commit. Use when the user asks "why is this code here", "what was the agent doing when this changed", "who wrote this", or wants context on a specific location in the codebase. |
+| `commit-history` | ⚡ agentmemory | `_shared` | List recent git commits linked to agent sessions, optionally filtered by branch or repo. Use when the user asks "show agent commits", "what has the agent shipped", "list linked commits", or wants commits with their session context. |
+| `session-history` | - | `_shared`, `remember` | Show what happened in recent past sessions on this project as a clean timeline. Use when the user asks "what did we do last time", "session history", "past sessions", or wants an overview of previous work. |
+| `agentmemory-mcp-tools` | ⚡ agentmemory | - | Map of every agentmemory MCP tool, what each does, and its parameters. Use when choosing which memory tool to call, when a tool name or argument is unclear, or when answering what agentmemory can do via MCP. |
+| `agentmemory-agents` | ⚡ agentmemory | `_shared` | How agentmemory wires into host coding agents via the connect command. Use when installing agentmemory into a specific agent, when asked which agents are supported, or when a connect adapter writes the wrong config path. |
+| `agentmemory-architecture` | ⚡ agentmemory | - | How agentmemory is built, the iii engine primitives it runs on, its storage model, ports, and the viewer. Use when reasoning about how memory is stored or retrieved end to end, when extending the system, or when answering how agentmemory works under the hood. |
+| `agentmemory-config` | ⚡ agentmemory | - | agentmemory configuration, environment variables, ports, and feature flags. Use when enabling a feature, changing ports, setting an API key, configuring auth, or explaining why a feature is off by default. |
+| `agentmemory-hooks` | ⚡ agentmemory | `_shared` | The agentmemory plugin hooks that capture observations automatically across the agent session lifecycle. Use when explaining how memory gets captured without manual saves, when debugging missing observations, or when tuning what gets recorded. |
+| `agentmemory-rest-api` | ⚡ agentmemory | `forget`, `remember` | The agentmemory HTTP REST API surface, the primary protocol for talking to the memory server. Use when calling agentmemory over HTTP, when MCP is unavailable and you need a fallback, or when integrating a host that does not speak MCP. |
+| `write-agentmemory-skill` | ⚡ agentmemory | `_shared` | The house format and rules for writing or updating an agentmemory skill. Use when adding a new skill, restructuring an existing one, or reviewing a skill contribution for consistency. |
+
+---
+
 ### 📦 Pack: Agent & Prompt Authoring (`agent-authoring`)
 Tools and guidelines for writing skills, rules, prompts, and agent personas.
 
@@ -188,10 +215,18 @@ Tools and guidelines for writing skills, rules, prompts, and agent personas.
 
 ---
 
-## 📚 All Indexed Skills (128)
+## 📚 All Indexed Skills (146)
 
 | Skill | MCP | Bundle | Packs | Description |
 | :--- | :---: | :---: | :--- | :--- |
+| `_shared` | - | - | - | No description provided |
+| `agentmemory-agents` | ⚡ agentmemory | - | `agentmemory` | How agentmemory wires into host coding agents via the connect command. Use when installing agentmemory into a specific agent, when asked which agents are supported, or when a connect adapter writes the wrong config path. |
+| `agentmemory-architecture` | ⚡ agentmemory | - | `agentmemory` | How agentmemory is built, the iii engine primitives it runs on, its storage model, ports, and the viewer. Use when reasoning about how memory is stored or retrieved end to end, when extending the system, or when answering how agentmemory works under the hood. |
+| `agentmemory-config` | ⚡ agentmemory | - | `agentmemory` | agentmemory configuration, environment variables, ports, and feature flags. Use when enabling a feature, changing ports, setting an API key, configuring auth, or explaining why a feature is off by default. |
+| `agentmemory-handoff` | ⚡ agentmemory | - | `agentmemory` | Resume the most recent agent session for the current working directory, leading with any unanswered question. Use when the user says "where were we", "resume", "handoff", "pick up where I left off", or starts a session with no fresh context. |
+| `agentmemory-hooks` | ⚡ agentmemory | - | `agentmemory` | The agentmemory plugin hooks that capture observations automatically across the agent session lifecycle. Use when explaining how memory gets captured without manual saves, when debugging missing observations, or when tuning what gets recorded. |
+| `agentmemory-mcp-tools` | ⚡ agentmemory | - | `agentmemory` | Map of every agentmemory MCP tool, what each does, and its parameters. Use when choosing which memory tool to call, when a tool name or argument is unclear, or when answering what agentmemory can do via MCP. |
+| `agentmemory-rest-api` | ⚡ agentmemory | - | `agentmemory` | The agentmemory HTTP REST API surface, the primary protocol for talking to the memory server. Use when calling agentmemory over HTTP, when MCP is unavailable and you need a fallback, or when integrating a host that does not speak MCP. |
 | `alpha-research` | ⚡ github | - | `bio-research` | Search, read, and query research papers via Feynman's alphaXiv-backed alpha tools. Use when the user asks about academic papers, wants to find research on a topic, needs to read a specific paper, ask questions about a paper, inspect a paper's code repository, or manage paper annotations. |
 | `alphafold2` | - | - | `bio-research` | Predict or audit protein structures with AlphaFold2-style workflows. Use when a research task needs monomer/multimer structure prediction, MSA/template handling, confidence metrics, or comparison against PDB/AlphaFold references. |
 | `android-lint-inspector` | - | - | - | > |
@@ -212,6 +247,8 @@ Tools and guidelines for writing skills, rules, prompts, and agent personas.
 | `claude-handoff` | - | 📦 `aihero-mattpocock` | `aihero-mattpocock` | Hand the current conversation off to a fresh background agent that picks up the work immediately. |
 | `code-review` | - | 📦 `aihero-mattpocock` | `aihero-mattpocock` `dev-workflow` | Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\". |
 | `codebase-design` | - | 📦 `aihero-mattpocock` | `aihero-mattpocock` | Shared vocabulary for designing deep modules. Use when the user wants to design or improve a module's interface, find deepening opportunities, decide where a seam goes, make code more testable or AI-navigable, or when another skill needs the deep-module vocabulary. |
+| `commit-context` | - | - | `agentmemory` | Trace a file, function, or line back to the agent session that produced its current commit. Use when the user asks "why is this code here", "what was the agent doing when this changed", "who wrote this", or wants context on a specific location in the codebase. |
+| `commit-history` | ⚡ agentmemory | - | `agentmemory` | List recent git commits linked to agent sessions, optionally filtered by branch or repo. Use when the user asks "show agent commits", "what has the agent shipped", "list linked commits", or wants commits with their session context. |
 | `compute-env-setup` | - | - | - | Set up a reproducible Feynman compute environment for research jobs. Use when a task needs Python/R packages, GPU libraries, containers, Modal, SSH, caches, or managed model runtime setup. |
 | `contributing` | - | - | - | Contribute changes to the Feynman repository itself. Use when the task is to add features, fix bugs, update prompts or skills, change install or release behavior, improve docs, or prepare a focused PR against this repo. |
 | `customize` | - | - | - | Configure Feynman specialists, skills, connectors, permissions, memory categories, compute providers, and project setup. Use when the task asks to customize the research workbench or create a reusable Feynman research capability. |
@@ -234,6 +271,7 @@ Tools and guidelines for writing skills, rules, prompts, and agent personas.
 | `fair-esm2` | - | - | `bio-research` | Use ESM2 protein language models for embeddings, mutation scoring, remote homology, or representation analysis. Use when a task needs protein embeddings, zero-shot variant scores, clustering, or sequence-function triage. |
 | `figure-composer` | - | - | - | Compose a publication-grade multi-panel scientific figure from a claim, dataset, or draft result. Use when the task needs panel planning, consistent figure layout, figure review, or final figure assembly. |
 | `figure-style` | - | - | - | Apply scientific plotting and figure-quality rules to a single plot or panel. Use when drawing, cleaning, labeling, or reviewing plots for research artifacts. |
+| `forget` | ⚡ agentmemory | - | `agentmemory` | Delete specific observations from agentmemory after showing them and getting explicit confirmation. Use when the user says "forget this", "delete memory", "remove that note", or wants to scrub specific data for privacy. |
 | `gcloud-auth-verification` | ⚡ notebooks | - | `gcp-bigquery` | Guidelines for identifying and resolving missing Google Cloud authentication |
 | `gcp-composer-troubleshooting` | - | - | `gcp-bigquery` | Provides expert guidance for troubleshooting Cloud Composer (Apache |
 | `gcp-data-pipelines` | ⚡ notebooks | - | `gcp-bigquery` | Primary entry point for building, managing, and orchestrating data pipelines |
@@ -251,11 +289,13 @@ Tools and guidelines for writing skills, rules, prompts, and agent personas.
 | `improve-codebase-architecture` | - | 📦 `aihero-mattpocock` | `aihero-mattpocock` | Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick. |
 | `indication-dossier` | - | - | `bio-research` | Build a source-backed biomedical indication dossier. Use when a research task asks for disease biology, target rationale, patient segmentation, biomarkers, trials, drugs, competitive landscape, or translational evidence. |
 | `jobs` | - | - | - | Inspect visible research run state, scheduled research follow-ups when available, and durable watch artifacts. Use when the user asks what's running for a research workflow or wants research-run status. |
+| `lesson` | - | - | `agentmemory` | Save a correction or hard-won rule as a confidence-weighted lesson that resurfaces before similar work. Use when the user corrects your approach, says "learn this", "always" or "never do X", or you notice yourself repeating a past mistake. |
 | `ligandmpnn` | - | - | `bio-research` | Design protein sequences around ligand or small-molecule contexts with LigandMPNN-style workflows. Use when a task asks for ligand-aware protein design, residue redesign, constraints, or design ranking. |
 | `literature-review` | - | - | `bio-research` | Run a literature review using paper search and primary-source synthesis. Use when the user asks for a lit review, paper survey, state of the art, or academic landscape summary on a research topic. |
 | `loop-me` | - | 📦 `aihero-mattpocock` | `aihero-mattpocock` | Grill me about specs for the workflows I want to build, within this workspace. |
 | `managed-model-endpoints` | - | - | - | Register or audit Feynman-managed model endpoints. Use when a research workflow needs a local or remote model service, endpoint health checks, credential refs, startup scripts, or inference routing. |
 | `managing-python-dependencies` | - | - | - | Ensures proper Python dependency management, avoiding global `pip install` and |
+| `memory-discipline` | ⚡ agentmemory | - | `agentmemory` | The session loop that makes agentmemory pay off, recall before starting work, save at decision points, learn from corrections. Use when starting a nontrivial task, after settling a decision or debugging a gotcha, or whenever deciding if something belongs in memory. |
 | `migrate-to-shoehorn` | - | - | - | Migrate test files from `as` type assertions to @total-typescript/shoehorn. Use when user mentions shoehorn, wants to replace `as` in tests, or needs partial test data. |
 | `ml-best-practices` | ⚡ visualization | - | `gcp-bigquery` | CRITICAL RULE: You MUST use this skill whenever the task involves any machine learning tasks or data analysis. |
 | `ml-training-recipe` | - | - | `gcp-bigquery` | Find implementable ML training recipes from papers, datasets, docs, and code. Use when the user wants to fine-tune, train, reproduce, or choose a practical ML method, dataset, hyperparameter setup, or benchmark recipe. |
@@ -271,6 +311,9 @@ Tools and guidelines for writing skills, rules, prompts, and agent personas.
 | `proteinmpnn` | - | - | `bio-research` | Design protein sequences from fixed backbone structures with ProteinMPNN-style workflows. Use when a task asks for backbone-conditioned sequence design, mutation suggestions, fixed residues, or design filtering. |
 | `prototype` | - | 📦 `aihero-mattpocock` | `aihero-mattpocock` | Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like. |
 | `react-vite-dashboard` | ⚡ stitch | - | `stitch-ui` | Convert Stitch designs into production React + Vite dashboards with TanStack Query, accessible tokens from DESIGN.md, and Web3-ready patterns (ethers/viem). |
+| `recall` | ⚡ agentmemory | - | `agentmemory` | Search agentmemory for past observations, sessions, and learnings about a topic using hybrid BM25 plus vector plus graph search. Use when the user says "recall", "what did we do about", "did we ever", "have we seen", or needs context from past sessions. |
+| `recap` | - | - | `agentmemory` | Summarize the last N agent sessions for the current project, grouped by date, with highlight observations per session. Use when the user asks "recap", "what have we been doing", "today", "this week", or wants a rollup of recent work. |
+| `remember` | ⚡ agentmemory | - | `agentmemory` | Save an insight, decision, or learning to agentmemory's long-term storage with searchable concept tags. Use when the user says "remember this", "save this", "note that", "don't forget", or wants to preserve knowledge for future sessions. |
 | `remote-compute-modal` | - | - | - | Dispatch Feynman research notebook or experiment jobs to Modal. Use when a task has explicitly chosen Modal for bounded cloud compute, GPU jobs, or reproducible remote execution. |
 | `remote-compute-ssh` | - | - | - | Run Feynman research jobs on SSH, Slurm, or lab hosts. Use when a task needs remote host setup, job submission, log harvest, artifact sync, or GPU/cluster execution outside Modal. |
 | `remotion` | ⚡ github, stitch | - | `stitch-ui` | Generate walkthrough videos from Stitch projects using Remotion with smooth transitions, zooming, and text overlays |
@@ -284,6 +327,7 @@ Tools and guidelines for writing skills, rules, prompts, and agent personas.
 | `scgpt` | - | - | `bio-research` | Use scGPT-style single-cell foundation model workflows. Use when a task asks for single-cell embeddings, perturbation prediction, cell annotation, batch transfer, or gene-program analysis. |
 | `scvi-tools` | - | - | `bio-research` | Run scvi-tools single-cell workflows. Use when a task asks for scVI/scANVI setup, latent embeddings, batch correction, differential expression, cell annotation, or reproducible AnnData analysis. |
 | `self-awareness` | - | - | - | Inspect the active Feynman workbench session, artifacts, execution log, settings, and provenance. Use when the task asks what happened in this session, which files were written, what tools ran, or what remains unverified. |
+| `session-history` | - | - | `agentmemory` | Show what happened in recent past sessions on this project as a clean timeline. Use when the user asks "what did we do last time", "session history", "past sessions", or wants an overview of previous work. |
 | `session-log` | - | - | - | Write a durable session log capturing completed work, findings, open questions, and next steps. Use when the user asks to log progress, save session notes, write up what was done, or create a research diary entry. |
 | `session-search` | - | - | - | Recover prior Feynman work from session transcripts. Use the optional /search command only when it is installed and visible; otherwise search local session JSONL files directly. |
 | `setup-matt-pocock-skills` | ⚡ github | 📦 `aihero-mattpocock` | `aihero-mattpocock` | Configure this repo for the engineering skills: set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills. |
@@ -316,6 +360,7 @@ Tools and guidelines for writing skills, rules, prompts, and agent personas.
 | `watch` | - | - | - | Create a research watch baseline and optionally schedule follow-up checks when scheduling tools are visible. Use when the user asks to monitor a field, track new papers, watch for updates, or set up alerts on a research area. |
 | `wayfinder` | - | 📦 `aihero-mattpocock` | `aihero-mattpocock` | Plan a huge chunk of work (more than one agent session can hold) as a shared map of decision tickets on your issue tracker, and resolve them one at a time until the way to the destination is clear. |
 | `wizard` | ⚡ github | 📦 `aihero-mattpocock` | `aihero-mattpocock` | Generate an interactive bash wizard that walks a human through steps only they can perform. Use when provisioning infrastructure, setting up credentials or CI secrets, walking an unfamiliar third-party dashboard, or running a one-off migration or cutover. Don't invoke this for steps the agent can perform itself. |
+| `write-agentmemory-skill` | ⚡ agentmemory | - | `agentmemory` | The house format and rules for writing or updating an agentmemory skill. Use when adding a new skill, restructuring an existing one, or reviewing a skill contribution for consistency. |
 | `writing-beats` | - | 📦 `aihero-mattpocock` | `aihero-mattpocock` `agent-authoring` | Writing, exploit; assemble raw material into a journey of beats, grounding each term before a beat leans on it. |
 | `writing-for-agents` | - | 📦 `aihero-mattpocock` | `aihero-mattpocock` `agent-authoring` | Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md. |
 | `writing-fragments` | - | 📦 `aihero-mattpocock` | `aihero-mattpocock` `agent-authoring` | Writing, explore: mine raw fragments, no structure yet. |

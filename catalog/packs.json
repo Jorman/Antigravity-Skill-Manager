@@ -151,6 +151,31 @@
         "cavecrew"
       ]
     },
+    "agentmemory": {
+      "name": "Agent Memory & Session Context Suite",
+      "description": "Persistent memory, intelligent search, session handoffs, and learned lessons powered by the agentmemory MCP server.",
+      "tags": ["memory", "agentmemory", "persistence", "recall", "remember", "sessions", "context"],
+      "linkedMcp": "agentmemory",
+      "skills": [
+        "remember",
+        "recall",
+        "recap",
+        "forget",
+        "lesson",
+        "agentmemory-handoff",
+        "memory-discipline",
+        "commit-context",
+        "commit-history",
+        "session-history",
+        "agentmemory-mcp-tools",
+        "agentmemory-agents",
+        "agentmemory-architecture",
+        "agentmemory-config",
+        "agentmemory-hooks",
+        "agentmemory-rest-api",
+        "write-agentmemory-skill"
+      ]
+    },
     "agent-authoring": {
       "name": "Agent & Prompt Authoring",
       "description": "Tools and guidelines for writing skills, rules, prompts, and agent personas.",

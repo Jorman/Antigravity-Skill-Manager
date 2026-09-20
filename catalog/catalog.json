@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-20T21:23:21.395Z",
+  "generatedAt": "2026-09-20T21:50:24.901Z",
   "libraryPath": "~/.gemini/skill-library",
   "configuredMcpServers": [],
-  "totalSkills": 128,
-  "estimatedTokensSaved": 9020,
+  "totalSkills": 146,
+  "estimatedTokensSaved": 10611,
   "packs": [
     "aihero-mattpocock",
     "stitch-ui",
@@ -12,9 +12,169 @@
     "bio-research",
     "dev-workflow",
     "caveman",
+    "agentmemory",
     "agent-authoring"
   ],
   "skills": [
+    {
+      "name": "_shared",
+      "folderName": "_shared",
+      "description": "No description provided",
+      "path": "~/.gemini/skill-library/_shared",
+      "tokenEstimate": 0,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "remember"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": []
+    },
+    {
+      "name": "agentmemory-agents",
+      "folderName": "agentmemory-agents",
+      "description": "How agentmemory wires into host coding agents via the connect command. Use when installing agentmemory into a specific agent, when asked which agents are supported, or when a connect adapter writes the wrong config path.",
+      "path": "~/.gemini/skill-library/agentmemory-agents",
+      "tokenEstimate": 91,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
+      "name": "agentmemory-architecture",
+      "folderName": "agentmemory-architecture",
+      "description": "How agentmemory is built, the iii engine primitives it runs on, its storage model, ports, and the viewer. Use when reasoning about how memory is stored or retrieved end to end, when extending the system, or when answering how agentmemory works under the hood.",
+      "path": "~/.gemini/skill-library/agentmemory-architecture",
+      "tokenEstimate": 104,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
+      "name": "agentmemory-config",
+      "folderName": "agentmemory-config",
+      "description": "agentmemory configuration, environment variables, ports, and feature flags. Use when enabling a feature, changing ports, setting an API key, configuring auth, or explaining why a feature is off by default.",
+      "path": "~/.gemini/skill-library/agentmemory-config",
+      "tokenEstimate": 87,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
+      "name": "agentmemory-handoff",
+      "folderName": "agentmemory-handoff",
+      "description": "Resume the most recent agent session for the current working directory, leading with any unanswered question. Use when the user says \"where were we\", \"resume\", \"handoff\", \"pick up where I left off\", or starts a session with no fresh context.",
+      "path": "~/.gemini/skill-library/agentmemory-handoff",
+      "tokenEstimate": 98,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
+      "name": "agentmemory-hooks",
+      "folderName": "agentmemory-hooks",
+      "description": "The agentmemory plugin hooks that capture observations automatically across the agent session lifecycle. Use when explaining how memory gets captured without manual saves, when debugging missing observations, or when tuning what gets recorded.",
+      "path": "~/.gemini/skill-library/agentmemory-hooks",
+      "tokenEstimate": 98,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
+      "name": "agentmemory-mcp-tools",
+      "folderName": "agentmemory-mcp-tools",
+      "description": "Map of every agentmemory MCP tool, what each does, and its parameters. Use when choosing which memory tool to call, when a tool name or argument is unclear, or when answering what agentmemory can do via MCP.",
+      "path": "~/.gemini/skill-library/agentmemory-mcp-tools",
+      "tokenEstimate": 88,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": true,
+      "dependencies": [],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
+      "name": "agentmemory-rest-api",
+      "folderName": "agentmemory-rest-api",
+      "description": "The agentmemory HTTP REST API surface, the primary protocol for talking to the memory server. Use when calling agentmemory over HTTP, when MCP is unavailable and you need a fallback, or when integrating a host that does not speak MCP.",
+      "path": "~/.gemini/skill-library/agentmemory-rest-api",
+      "tokenEstimate": 96,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "forget",
+        "remember"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
     {
       "name": "alpha-research",
       "folderName": "alpha-research",
@@ -398,6 +558,46 @@
       ]
     },
     {
+      "name": "commit-context",
+      "folderName": "commit-context",
+      "description": "Trace a file, function, or line back to the agent session that produced its current commit. Use when the user asks \"why is this code here\", \"what was the agent doing when this changed\", \"who wrote this\", or wants context on a specific location in the codebase.",
+      "path": "~/.gemini/skill-library/commit-context",
+      "tokenEstimate": 102,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
+      "name": "commit-history",
+      "folderName": "commit-history",
+      "description": "List recent git commits linked to agent sessions, optionally filtered by branch or repo. Use when the user asks \"show agent commits\", \"what has the agent shipped\", \"list linked commits\", or wants commits with their session context.",
+      "path": "~/.gemini/skill-library/commit-history",
+      "tokenEstimate": 93,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
       "name": "compute-env-setup",
       "folderName": "compute-env-setup",
       "description": "Set up a reproducible Feynman compute environment for research jobs. Use when a task needs Python/R packages, GPU libraries, containers, Modal, SSH, caches, or managed model runtime setup.",
@@ -771,6 +971,27 @@
       "packs": []
     },
     {
+      "name": "forget",
+      "folderName": "forget",
+      "description": "Delete specific observations from agentmemory after showing them and getting explicit confirmation. Use when the user says \"forget this\", \"delete memory\", \"remove that note\", or wants to scrub specific data for privacy.",
+      "path": "~/.gemini/skill-library/forget",
+      "tokenEstimate": 88,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
       "name": "gcloud-auth-verification",
       "folderName": "gcloud-auth-verification",
       "description": "Guidelines for identifying and resolving missing Google Cloud authentication",
@@ -1086,6 +1307,25 @@
       "packs": []
     },
     {
+      "name": "lesson",
+      "folderName": "lesson",
+      "description": "Save a correction or hard-won rule as a confidence-weighted lesson that resurfaces before similar work. Use when the user corrects your approach, says \"learn this\", \"always\" or \"never do X\", or you notice yourself repeating a past mistake.",
+      "path": "~/.gemini/skill-library/lesson",
+      "tokenEstimate": 93,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
       "name": "ligandmpnn",
       "folderName": "ligandmpnn",
       "description": "Design protein sequences around ligand or small-molecule contexts with LigandMPNN-style workflows. Use when a task asks for ligand-aware protein design, residue redesign, constraints, or design ranking.",
@@ -1167,6 +1407,27 @@
       "bundleKey": null,
       "bundleName": null,
       "packs": []
+    },
+    {
+      "name": "memory-discipline",
+      "folderName": "memory-discipline",
+      "description": "The session loop that makes agentmemory pay off, recall before starting work, save at decision points, learn from corrections. Use when starting a nontrivial task, after settling a decision or debugging a gotcha, or whenever deciding if something belongs in memory.",
+      "path": "~/.gemini/skill-library/memory-discipline",
+      "tokenEstimate": 104,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
     },
     {
       "name": "migrate-to-shoehorn",
@@ -1419,6 +1680,67 @@
       ]
     },
     {
+      "name": "recall",
+      "folderName": "recall",
+      "description": "Search agentmemory for past observations, sessions, and learnings about a topic using hybrid BM25 plus vector plus graph search. Use when the user says \"recall\", \"what did we do about\", \"did we ever\", \"have we seen\", or needs context from past sessions.",
+      "path": "~/.gemini/skill-library/recall",
+      "tokenEstimate": 97,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
+      "name": "recap",
+      "folderName": "recap",
+      "description": "Summarize the last N agent sessions for the current project, grouped by date, with highlight observations per session. Use when the user asks \"recap\", \"what have we been doing\", \"today\", \"this week\", or wants a rollup of recent work.",
+      "path": "~/.gemini/skill-library/recap",
+      "tokenEstimate": 91,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
+      "name": "remember",
+      "folderName": "remember",
+      "description": "Save an insight, decision, or learning to agentmemory's long-term storage with searchable concept tags. Use when the user says \"remember this\", \"save this\", \"note that\", \"don't forget\", or wants to preserve knowledge for future sessions.",
+      "path": "~/.gemini/skill-library/remember",
+      "tokenEstimate": 93,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
+    },
+    {
       "name": "remote-compute-modal",
       "folderName": "remote-compute-modal",
       "description": "Dispatch Feynman research notebook or experiment jobs to Modal. Use when a task has explicitly chosen Modal for bounded cloud compute, GPU jobs, or reproducible remote execution.",
@@ -1634,6 +1956,26 @@
       "bundleKey": null,
       "bundleName": null,
       "packs": []
+    },
+    {
+      "name": "session-history",
+      "folderName": "session-history",
+      "description": "Show what happened in recent past sessions on this project as a clean timeline. Use when the user asks \"what did we do last time\", \"session history\", \"past sessions\", or wants an overview of previous work.",
+      "path": "~/.gemini/skill-library/session-history",
+      "tokenEstimate": 86,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared",
+        "remember"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
+      ]
     },
     {
       "name": "session-log",
@@ -2225,6 +2567,27 @@
       "bundleName": "AI Hero & Matt Pocock Engineering Suite",
       "packs": [
         "aihero-mattpocock"
+      ]
+    },
+    {
+      "name": "write-agentmemory-skill",
+      "folderName": "write-agentmemory-skill",
+      "description": "The house format and rules for writing or updating an agentmemory skill. Use when adding a new skill, restructuring an existing one, or reviewing a skill contribution for consistency.",
+      "path": "~/.gemini/skill-library/write-agentmemory-skill",
+      "tokenEstimate": 82,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "agentmemory"
+      ],
+      "hasGenericMcp": false,
+      "dependencies": [
+        "_shared"
+      ],
+      "isBundle": false,
+      "bundleKey": null,
+      "bundleName": null,
+      "packs": [
+        "agentmemory"
       ]
     },
     {
