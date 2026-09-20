@@ -141,14 +141,14 @@ Once installed, talk to Antigravity naturally:
 
 | What you say in chat | What Antigravity does |
 | :--- | :--- |
-| *"Analizza le mie skill globali e controlla i token"* | Runs `analyze`, displays token breakdown, MCP dependencies, and duplicate status. |
-| *"Ci sono duplicati tra le skill globali e la warehouse?"* | Runs `duplicates`, compares SHA-256 checksums, and reports identical or modified copies. |
-| *"Abbiamo una skill per gestire React o Stitch?"* | Queries the local catalog and presents matching skills with descriptions. |
-| *"Cosa mi consigli per questo task?"* | Inspects project files and recommends relevant local skills or packs. |
-| *"Attiva la skill tdd per questo progetto"* | Copies `tdd` into `./.agents/skills/tdd` for the current repository only. |
-| *"Attiva il pacchetto stitch-ui"* | Copies all Stitch UI skills into `./.agents/skills/`. |
-| *"Cerca una skill online per Web3/Solana"* | Searches local warehouse; if not found, queries online via `find-skills`. |
-| *"Archivia questa nuova skill e aggiorna il catalogo"* | Stores the skill in `~/.gemini/skill-library/` with conflict backup and regenerates `catalog.json` and `CATALOG.md`. |
+| *"Analyze my global skills and check token usage"* | Runs `analyze`, displays token breakdown, MCP dependencies, and duplicate status. |
+| *"Are there any duplicates between global skills and the warehouse?"* | Runs `duplicates`, compares SHA-256 checksums, and reports identical or modified copies. |
+| *"Do we have a skill to handle React or Stitch UI?"* | Queries the local catalog and presents matching skills with descriptions. |
+| *"What skills do you recommend for this project?"* | Inspects project files and recommends relevant local skills or packs. |
+| *"Activate the tdd skill for this project"* | Copies `tdd` into `./.agents/skills/tdd` for the current repository only. |
+| *"Activate the stitch-ui pack here"* | Copies all Stitch UI skills into `./.agents/skills/`. |
+| *"Search online for a Web3 or Solana skill"* | Searches local warehouse; if not found, queries online via `find-skills`. |
+| *"Archive this new skill and update the catalog"* | Stores the skill in `~/.gemini/skill-library/` with conflict backup and regenerates `catalog.json` and `CATALOG.md`. |
 
 ---
 

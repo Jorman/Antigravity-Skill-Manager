@@ -9,28 +9,28 @@ This guide covers both **Command Line Interface (CLI)** usage and **Natural Lang
 Once `skill-manager` and `skill-archiver` are installed in your global configuration (`~/.gemini/config/skills/`), you can interact with them directly in chat using natural language:
 
 ### Asking If a Skill Exists
-> **User**: *"Abbiamo una skill per gestire i componenti React o Stitch?"*  
+> **User**: *"Do we have a skill to manage React components or Google Stitch?"*  
 > **Agent**: Looks up `catalog.json` / `CATALOG.md` in `~/.gemini/skill-library/`, reports matching skills (`react-components`, `design-md`, `stitch-loop`), and asks if you want to activate them in the project.
 
 ### Asking for Recommendations
-> **User**: *"Cosa mi consigli per questo progetto di data engineering su BigQuery?"*  
+> **User**: *"What skills do you recommend for this BigQuery data engineering project?"*  
 > **Agent**: Inspects the workspace, identifies GCP/SQL workflows, queries `gcp-bigquery` pack, and suggests activating `dbt-bigquery`, `dataform-bigquery`, and `developing-with-bigquery`.
 
 ### Activating a Single Skill
-> **User**: *"Attiva la skill tdd per questo progetto."*  
+> **User**: *"Activate the tdd skill for this project."*  
 > **Agent**: Copies `~/.gemini/skill-library/tdd` into `<project-root>/.agents/skills/tdd` and confirms activation.
 
 ### Activating a Predefined Pack
-> **User**: *"Attiva tutto il pacchetto Stitch UI."*  
+> **User**: *"Activate the entire Stitch UI pack."*  
 > **Agent**: Reads `packs.json` for `stitch-ui` and copies all 15 related skills into `<project-root>/.agents/skills/`.
 
 ### Online Fallback Search
-> **User**: *"C'è una skill per Solana o Web3?"*  
+> **User**: *"Is there a skill for Solana or Web3?"*  
 > **Agent**: Checks local library; if none is found, executes `npx skills find solana` using `find-skills` and offers to install it.
 
 ### Archiving and Cleaning Global Skills
-> **User**: *"Archivia le skill che non servono e ripulisci il prompt globale."*  
-> **Agent**: Runs pre-analysis, reports specialized skills to move, gently asks confirmation on MCP-linked skills, moves them to `~/.gemini/skill-library/`, and triggers `reindex`.
+> **User**: *"Archive unnecessary skills and clean up the global system prompt."*  
+> **Agent**: Runs pre-analysis, reports specialized skills to move, calculates prompt tokens saved per turn, gently asks confirmation on MCP-linked skills, moves them to `~/.gemini/skill-library/`, and triggers `reindex`.
 
 ---
 

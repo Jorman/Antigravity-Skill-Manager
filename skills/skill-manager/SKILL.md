@@ -50,7 +50,7 @@ Never hardcode drive letters or absolute user paths. Resolve dynamically:
 
 ### 1. Check If a Skill Exists / Search Warehouse
 When the user asks:
-- *"Do we have a skill for X?"* / *"Abbiamo una skill per..."*
+- *"Do we have a skill for X?"*
 - *"Search for a skill that does..."*
 - *"Is there a skill for BigQuery / React / Docker / Biology?"*
 
@@ -66,8 +66,9 @@ When the user asks:
 
 ### 2. Recommend Skills for Current Project (Intelligent Advisory)
 When the user asks:
-- *"What skills do you recommend for this project?"* / *"Quali skill mi consigli per questo progetto?"*
-- *"Aiutami a scegliere le skill per questo task"* / *"Which local skills would be useful here?"*
+- *"What skills do you recommend for this project?"*
+- *"Help me choose local skills for this task"*
+- *"Which local skills would be useful here?"*
 
 **Protocol:**
 1. **Analyze Project Environment & Tech Signals**:
@@ -95,8 +96,8 @@ When the user asks:
 
 ### 3. Activate Skills / Packs for the Current Project (Default)
 When the user says:
-- *"Attiva Stitch per questo progetto"* / *"Enable BigQuery skills here"*
-- *"Installa la skill react-components"* / *"Activate tdd"*
+- *"Activate Stitch for this project"* / *"Enable BigQuery skills here"*
+- *"Install the react-components skill"* / *"Activate tdd"*
 
 **Action:**
 1. Target path: `<project-root>/.agents/skills/<skill-name>`.

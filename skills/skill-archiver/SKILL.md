@@ -48,7 +48,7 @@ Whenever skills are archived, migrated, or updated, the skill regenerates:
 ## Conversational Workflows
 
 ### Scenario A: Clean up global skills & save tokens
-> **User**: *"Analizza le mie skill globali e ripulisci il prompt"* / *"Optimize my global skills"*
+> **User**: *"Analyze my global skills and clean up the prompt"* / *"Optimize my global skills"*
 
 **Action:**
 1. Run analysis via CLI:
@@ -73,7 +73,7 @@ Whenever skills are archived, migrated, or updated, the skill regenerates:
 ---
 
 ### Scenario B: Ingest a newly created or downloaded skill
-> **User**: *"Archivia questa nuova skill situata in ./my-skill"*
+> **User**: *"Archive this new skill located in ./my-skill"*
 
 **Action:**
 1. Inspect `./my-skill/SKILL.md` to verify frontmatter (`name`, `description`).
@@ -87,7 +87,7 @@ Whenever skills are archived, migrated, or updated, the skill regenerates:
 ---
 
 ### Scenario C: Check for duplicates
-> **User**: *"Ci sono duplicati tra le mie skill globali e la warehouse?"*
+> **User**: *"Are there any duplicates between my global skills and the warehouse?"*
 
 **Action:**
 1. Run `node <path-to-skill-manager>/bin/skill-manager.cjs duplicates`.
