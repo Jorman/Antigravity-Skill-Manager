@@ -6,13 +6,15 @@
  *
  * Zero external dependencies - pure Node.js built-ins.
  * Fully cross-platform (Windows, macOS, Linux) with dynamic user home resolution.
+ * Completely dynamic: Zero hardcoded skill names, dynamically inspects user's MCP configurations,
+ * detects duplicates, and provides intelligent token-saving advice.
  */
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const readline = require('readline');
-const { execSync } = require('child_process');
 
 // ==========================================
 // Dynamic Directory Resolution (Zero Hardcoding)
@@ -41,7 +43,6 @@ function getProjectSkillsPath(targetDir) {
 }
 
 function getPacksFilePath() {
-  // Look in repository catalog/packs.json or local warehouse packs.json
   const repoPacks = path.join(__dirname, '..', 'catalog', 'packs.json');
   if (fs.existsSync(repoPacks)) return repoPacks;
 
@@ -49,6 +50,123 @@ function getPacksFilePath() {
   if (fs.existsSync(libraryPacks)) return libraryPacks;
 
   return null;
+}
+
+// ==========================================
+// Dynamic MCP Server Discovery
+// ==========================================
+function getConfiguredMcpServers() {
+  const mcpServers = new Set();
+  const home = getUserHome();
+
+  const candidateConfigs = [
+    process.env.ANTIGRAVITY_MCP_CONFIG,
+    path.join(home, '.gemini', 'config', 'mcp_config.json'),
+    path.join(home, '.gemini', 'antigravity', 'mcp_config.json'),
+    path.join(home, '.gemini', 'antigravity-ide', 'mcp_config.json')
+  ].filter(Boolean);
+
+  for (const cfgPath of candidateConfigs) {
+    if (fs.existsSync(cfgPath)) {
+      try {
+        const raw = fs.readFileSync(cfgPath, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (parsed.mcpServers && typeof parsed.mcpServers === 'object') {
+          Object.keys(parsed.mcpServers).forEach(name => mcpServers.add(name.toLowerCase()));
+        }
+      } catch (_) {}
+    }
+  }
+
+  // Also check antigravity/mcp/ directories
+  const mcpDirs = [
+    path.join(home, '.gemini', 'antigravity', 'mcp'),
+    path.join(home, '.gemini', 'antigravity-ide', 'mcp')
+  ];
+
+  for (const mDir of mcpDirs) {
+    if (fs.existsSync(mDir)) {
+      try {
+        const entries = fs.readdirSync(mDir, { withFileTypes: true });
+        for (const e of entries) {
+          if (e.isDirectory() && !e.name.startsWith('.')) {
+            mcpServers.add(e.name.toLowerCase());
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  return Array.from(mcpServers);
+}
+
+// ==========================================
+// File Hashing & Directory Comparison
+// ==========================================
+function getFileChecksum(filePath) {
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+    return crypto.createHash('sha256').update(fileBuffer).digest('hex');
+  } catch (_) {
+    return null;
+  }
+}
+
+function getDirectoryFingerprint(dirPath) {
+  if (!fs.existsSync(dirPath)) return null;
+
+  const files = {};
+  function walk(current) {
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+      const relPath = path.relative(dirPath, fullPath).replace(/\\/g, '/');
+      if (entry.isDirectory()) {
+        walk(fullPath);
+      } else {
+        files[relPath] = getFileChecksum(fullPath);
+      }
+    }
+  }
+  walk(dirPath);
+  return files;
+}
+
+function compareSkillDirectories(sourceDir, targetDir) {
+  if (!fs.existsSync(targetDir)) {
+    return { status: 'UNIQUE', diff: 'Not present in destination' };
+  }
+
+  const srcFiles = getDirectoryFingerprint(sourceDir);
+  const tgtFiles = getDirectoryFingerprint(targetDir);
+
+  const srcKeys = Object.keys(srcFiles).sort();
+  const tgtKeys = Object.keys(tgtFiles).sort();
+
+  if (srcKeys.length !== tgtKeys.length) {
+    return { status: 'MODIFIED', diff: `File count mismatch (${srcKeys.length} vs ${tgtKeys.length})` };
+  }
+
+  let hasDiff = false;
+  for (const key of srcKeys) {
+    if (!tgtFiles[key] || srcFiles[key] !== tgtFiles[key]) {
+      hasDiff = true;
+      break;
+    }
+  }
+
+  if (!hasDiff) {
+    return { status: 'IDENTICAL', diff: 'Files and checksums match 100%' };
+  }
+
+  // Check which one was modified more recently
+  const srcMtime = fs.statSync(sourceDir).mtimeMs;
+  const tgtMtime = fs.statSync(targetDir).mtimeMs;
+
+  return {
+    status: 'MODIFIED',
+    diff: srcMtime > tgtMtime ? 'Source is newer' : 'Destination is newer'
+  };
 }
 
 // ==========================================
@@ -82,14 +200,14 @@ function parseYamlFrontmatter(content) {
   return { name, description };
 }
 
-function extractSkillMetadata(skillDir) {
+function extractSkillMetadata(skillDir, configuredMcpServers = []) {
   const skillName = path.basename(skillDir);
   const skillMdPath = path.join(skillDir, 'SKILL.md');
 
   let name = skillName;
   let description = 'No description provided';
-  let mcpRelated = false;
   let rawContent = '';
+  let tokenEstimate = 0;
 
   if (fs.existsSync(skillMdPath)) {
     try {
@@ -97,22 +215,39 @@ function extractSkillMetadata(skillDir) {
       const parsed = parseYamlFrontmatter(rawContent);
       if (parsed.name) name = parsed.name;
       if (parsed.description) description = parsed.description;
-    } catch (e) {
-      // Fallback to defaults
+      // Frontmatter token estimate (characters / 3.5)
+      tokenEstimate = Math.ceil((name.length + description.length + 80) / 3.5);
+    } catch (_) {}
+  }
+
+  // Dynamic MCP detection:
+  // 1. Check against user's configured MCP servers
+  const linkedMcpServers = [];
+  const lowerContent = rawContent.toLowerCase();
+
+  for (const mcp of configuredMcpServers) {
+    const regex = new RegExp(`\\b${mcp}\\b`, 'i');
+    if (regex.test(lowerContent) || skillName.toLowerCase().includes(mcp)) {
+      linkedMcpServers.push(mcp);
     }
   }
 
-  // Detect MCP references
-  if (rawContent.toLowerCase().includes('mcp') || rawContent.includes('call_mcp_tool')) {
-    mcpRelated = true;
-  }
+  // 2. Generic MCP invocation
+  const hasGenericMcp =
+    lowerContent.includes('call_mcp_tool') ||
+    lowerContent.includes('mcp_') ||
+    lowerContent.includes('mcp server') ||
+    lowerContent.includes('mcp tools');
 
   return {
     name,
     folderName: skillName,
     description,
-    mcpRelated,
-    path: skillDir
+    path: skillDir,
+    tokenEstimate,
+    mcpRelated: linkedMcpServers.length > 0 || hasGenericMcp,
+    linkedMcpServers: Array.from(new Set(linkedMcpServers)),
+    hasGenericMcp
   };
 }
 
@@ -127,9 +262,120 @@ function loadPacks() {
     const raw = fs.readFileSync(packsPath, 'utf8');
     const parsed = JSON.parse(raw);
     return parsed.packs || {};
-  } catch (e) {
+  } catch (_) {
     return {};
   }
+}
+
+// ==========================================
+// Deep Dynamic Analysis & Recommendation
+// ==========================================
+const CORE_SYSTEM_SKILLS = new Set([
+  'skill-manager',
+  'skill-archiver',
+  'find-skills'
+]);
+
+function analyzeSkill(skillDir, libraryDir, configuredMcpServers) {
+  const meta = extractSkillMetadata(skillDir, configuredMcpServers);
+  const warehousePath = path.join(libraryDir, meta.folderName);
+  const dupComparison = compareSkillDirectories(skillDir, warehousePath);
+
+  let category = 'SPECIALIZED';
+  let recommendation = 'ARCHIVE';
+  let reason = 'Domain or workflow capability. Moving to warehouse eliminates prompt token bloat in every conversation turn.';
+  let severity = 'info'; // 'info', 'warning', 'critical'
+
+  // 1. Core System
+  if (CORE_SYSTEM_SKILLS.has(meta.folderName) || CORE_SYSTEM_SKILLS.has(meta.name)) {
+    category = 'CORE_SYSTEM';
+    recommendation = 'KEEP_GLOBAL';
+    reason = 'Essential manager skill needed to search, activate, or archive other skills.';
+    severity = 'critical';
+  }
+  // 2. Execution Safety / Guardrails
+  else if (
+    meta.folderName.includes('guardrail') ||
+    meta.folderName.includes('data-loss') ||
+    meta.folderName.includes('safety') ||
+    meta.folderName.includes('prevention') ||
+    meta.description.toLowerCase().includes('irreversible data loss') ||
+    meta.description.toLowerCase().includes('block dangerous')
+  ) {
+    category = 'SAFETY_GUARDRAIL';
+    recommendation = 'KEEP_GLOBAL';
+    reason = 'Execution safety or data-loss guardrail protecting terminal commands. Recommended to keep global.';
+    severity = 'warning';
+  }
+  // 3. Linked to Configured MCP Server
+  else if (meta.linkedMcpServers.length > 0) {
+    category = 'MCP_LINKED';
+    recommendation = 'CONFIRM_USER';
+    reason = `Directly integrates with configured MCP server(s): [${meta.linkedMcpServers.join(', ')}]. If used across all projects, keep global. If used only for specific projects, archive.`;
+    severity = 'warning';
+  }
+  // 4. Generic MCP Reference
+  else if (meta.hasGenericMcp) {
+    category = 'MCP_GENERIC';
+    recommendation = 'CONFIRM_USER';
+    reason = 'References MCP server or tool execution. Ask user preference before archiving.';
+    severity = 'warning';
+  }
+  // 5. Duplicate Check
+  if (dupComparison.status === 'IDENTICAL') {
+    reason += ' (Note: An identical copy is ALREADY safely stored in the library warehouse).';
+  } else if (dupComparison.status === 'MODIFIED') {
+    reason += ` (Caution: Library version differs - ${dupComparison.diff}).`;
+  }
+
+  return {
+    ...meta,
+    category,
+    recommendation,
+    reason,
+    severity,
+    duplicateStatus: dupComparison.status,
+    duplicateDiff: dupComparison.diff
+  };
+}
+
+function analyzeAllGlobalSkills() {
+  const globalDir = getGlobalSkillsPath();
+  const libraryDir = getLibraryPath();
+  const configuredMcp = getConfiguredMcpServers();
+
+  if (!fs.existsSync(globalDir)) {
+    return { total: 0, skills: [], configuredMcp, summary: {} };
+  }
+
+  const entries = fs.readdirSync(globalDir, { withFileTypes: true });
+  const skills = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+    const skillPath = path.join(globalDir, entry.name);
+    const item = analyzeSkill(skillPath, libraryDir, configuredMcp);
+    skills.push(item);
+  }
+
+  skills.sort((a, b) => a.name.localeCompare(b.name));
+
+  const summary = {
+    core: skills.filter(s => s.category === 'CORE_SYSTEM'),
+    safety: skills.filter(s => s.category === 'SAFETY_GUARDRAIL'),
+    mcp: skills.filter(s => s.category === 'MCP_LINKED' || s.category === 'MCP_GENERIC'),
+    specialized: skills.filter(s => s.category === 'SPECIALIZED'),
+    identicalInWarehouse: skills.filter(s => s.duplicateStatus === 'IDENTICAL'),
+    modifiedInWarehouse: skills.filter(s => s.duplicateStatus === 'MODIFIED'),
+    totalTokens: skills.reduce((sum, s) => sum + s.tokenEstimate, 0)
+  };
+
+  return {
+    total: skills.length,
+    skills,
+    configuredMcp,
+    summary
+  };
 }
 
 // ==========================================
@@ -137,6 +383,7 @@ function loadPacks() {
 // ==========================================
 function reindexCatalog(options = {}) {
   const libraryDir = getLibraryPath();
+  const configuredMcp = getConfiguredMcpServers();
   const verbose = options.verbose !== false;
 
   if (!fs.existsSync(libraryDir)) {
@@ -149,13 +396,12 @@ function reindexCatalog(options = {}) {
 
   for (const entry of entries) {
     if (entry.isDirectory()) {
-      const skillPath = path.join(libraryDir, entry.name);
-      // Ignore hidden or meta folders
       if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
 
-      const meta = extractSkillMetadata(skillPath);
+      const skillPath = path.join(libraryDir, entry.name);
+      const meta = extractSkillMetadata(skillPath, configuredMcp);
 
-      // Associate with packs
+      // Match with packs
       const matchedPacks = [];
       for (const [packKey, pack] of Object.entries(packs)) {
         if (pack.skills && pack.skills.includes(entry.name)) {
@@ -168,15 +414,18 @@ function reindexCatalog(options = {}) {
     }
   }
 
-  // Sort alphabetically
   skills.sort((a, b) => a.name.localeCompare(b.name));
 
-  // 1. Generate catalog.json
+  const totalEstimatedTokens = skills.reduce((acc, s) => acc + s.tokenEstimate, 0);
+
+  // 1. catalog.json
   const catalogJson = {
     version: '1.0.0',
     generatedAt: new Date().toISOString(),
     libraryPath: libraryDir,
+    configuredMcpServers: configuredMcp,
     totalSkills: skills.length,
+    estimatedTokensSaved: totalEstimatedTokens,
     packs: Object.keys(packs),
     skills
   };
@@ -184,7 +433,7 @@ function reindexCatalog(options = {}) {
   const jsonFilePath = path.join(libraryDir, 'catalog.json');
   fs.writeFileSync(jsonFilePath, JSON.stringify(catalogJson, null, 2), 'utf8');
 
-  // Also sync to repository catalog/ if running inside repo
+  // Also sync to repository if inside repo
   const repoCatalogJson = path.join(__dirname, '..', 'catalog', 'catalog.json');
   if (fs.existsSync(path.dirname(repoCatalogJson))) {
     try {
@@ -192,38 +441,42 @@ function reindexCatalog(options = {}) {
     } catch (_) {}
   }
 
-  // 2. Generate CATALOG.md
+  // 2. CATALOG.md
   let mdContent = `# Local Agent Skill Warehouse Catalog\n\n`;
-  mdContent += `> Automatically generated on **${new Date().toLocaleDateString()}** by \`Antigravity Skill-Manager\`.\n`;
-  mdContent += `> Total dormant skills: **${skills.length}** | Total packs: **${Object.keys(packs).length}**\n\n`;
-  mdContent += `This catalog indexes all skills stored locally in the offline warehouse at \`~/.gemini/skill-library\`.\n`;
-  mdContent += `These skills are kept dormant to eliminate token overhead in standard chats (~15k+ tokens saved per prompt turn).\n`;
-  mdContent += `They can be activated on-demand for a single project (\`.agents/skills/\`) or globally.\n\n`;
+  mdContent += `> Generated on **${new Date().toLocaleDateString()}** by \`Antigravity Skill-Manager\`.\n`;
+  mdContent += `> Total dormant skills: **${skills.length}** | Total packs: **${Object.keys(packs).length}** | Estimated prompt tokens saved: **~${totalEstimatedTokens.toLocaleString()} tokens/turn**\n\n`;
+  mdContent += `This catalog indexes all skills stored offline in \`~/.gemini/skill-library\`.\n`;
+  mdContent += `These skills remain dormant until summoned for a specific project (\`.agents/skills/\`) or globally.\n\n`;
   mdContent += `---\n\n`;
 
-  // Render Packs sections
+  if (configuredMcp.length > 0) {
+    mdContent += `> ⚡ **Detected Configured MCP Servers:** \`${configuredMcp.join('`, `')}\`\n\n`;
+  }
+
+  // Render Packs
   for (const [packKey, pack] of Object.entries(packs)) {
     mdContent += `### 📦 Pack: ${pack.name} (\`${packKey}\`)\n`;
     mdContent += `${pack.description}\n\n`;
     mdContent += `*Tags:* \`${pack.tags.join('`, `')}\`\n\n`;
-    mdContent += `| Skill | Description |\n`;
-    mdContent += `| :--- | :--- |\n`;
+    mdContent += `| Skill | MCP | Description |\n`;
+    mdContent += `| :--- | :---: | :--- |\n`;
 
     for (const skillName of pack.skills) {
       const found = skills.find(s => s.folderName === skillName);
       const desc = found ? found.description : 'Specialized pack skill';
-      mdContent += `| \`${skillName}\` | ${desc.replace(/\|/g, '\\|')} |\n`;
+      const mcpBadge = found && found.mcpRelated ? (found.linkedMcpServers.length ? `⚡ ${found.linkedMcpServers.join(',')}` : '⚡ MCP') : '-';
+      mdContent += `| \`${skillName}\` | ${mcpBadge} | ${desc.replace(/\|/g, '\\|')} |\n`;
     }
     mdContent += `\n---\n\n`;
   }
 
   // Render All Skills Table
   mdContent += `## 📚 All Indexed Skills (${skills.length})\n\n`;
-  mdContent += `| Skill | MCP | Packs | Description |\n`;
+  mdContent += `| Skill | MCP Dependency | Packs | Description |\n`;
   mdContent += `| :--- | :---: | :--- | :--- |\n`;
 
   for (const s of skills) {
-    const mcpBadge = s.mcpRelated ? '⚡ MCP' : '-';
+    const mcpBadge = s.mcpRelated ? (s.linkedMcpServers.length ? `⚡ ${s.linkedMcpServers.join(', ')}` : '⚡ MCP') : '-';
     const packsBadge = s.packs.length > 0 ? s.packs.map(p => `\`${p}\``).join(' ') : '-';
     mdContent += `| \`${s.name}\` | ${mcpBadge} | ${packsBadge} | ${s.description.replace(/\|/g, '\\|')} |\n`;
   }
@@ -231,7 +484,6 @@ function reindexCatalog(options = {}) {
   const mdFilePath = path.join(libraryDir, 'CATALOG.md');
   fs.writeFileSync(mdFilePath, mdContent, 'utf8');
 
-  // Also sync to repository catalog/CATALOG.md if applicable
   const repoCatalogMd = path.join(__dirname, '..', 'catalog', 'CATALOG.md');
   if (fs.existsSync(path.dirname(repoCatalogMd))) {
     try {
@@ -242,83 +494,23 @@ function reindexCatalog(options = {}) {
   if (verbose) {
     console.log(`\x1b[32m✔ Catalog re-indexed successfully!\x1b[0m`);
     console.log(`  Indexed \x1b[1m${skills.length}\x1b[0m skills in \x1b[36m${libraryDir}\x1b[0m`);
-    console.log(`  JSON catalog: \x1b[90m${jsonFilePath}\x1b[0m`);
+    console.log(`  Detected MCP servers: \x1b[33m${configuredMcp.join(', ') || 'None'}\x1b[0m`);
+    console.log(`  Prompt tokens saved per message turn: \x1b[32m~${totalEstimatedTokens.toLocaleString()} tokens\x1b[0m`);
+    console.log(`  JSON index: \x1b[90m${jsonFilePath}\x1b[0m`);
     console.log(`  Markdown catalog: \x1b[90m${mdFilePath}\x1b[0m`);
   }
 
   return catalogJson;
 }
 
-// ==========================================
-// Catalog Query & Search
-// ==========================================
 function getCatalogData() {
   const jsonPath = path.join(getLibraryPath(), 'catalog.json');
   if (fs.existsSync(jsonPath)) {
     try {
       return JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-    } catch (e) {}
+    } catch (_) {}
   }
-  // Reindex on the fly if missing
   return reindexCatalog({ verbose: false });
-}
-
-function searchSkills(query) {
-  if (!query || !query.trim()) {
-    console.log('\x1b[33mPlease provide a search keyword or tag.\x1b[0m');
-    return;
-  }
-
-  const q = query.toLowerCase().trim();
-  const catalog = getCatalogData();
-  const packs = loadPacks();
-
-  console.log(`\n\x1b[1mSearching for:\x1b[0m "\x1b[36m${query}\x1b[0m" in local warehouse...\n`);
-
-  const results = catalog.skills.filter(skill => {
-    return (
-      skill.name.toLowerCase().includes(q) ||
-      skill.description.toLowerCase().includes(q) ||
-      skill.packs.some(p => p.toLowerCase().includes(q))
-    );
-  });
-
-  if (results.length > 0) {
-    console.log(`\x1b[32mFound ${results.length} matching skill(s) locally:\x1b[0m\n`);
-    for (const r of results) {
-      const mcpTag = r.mcpRelated ? ' \x1b[33m[MCP]\x1b[0m' : '';
-      const packsTag = r.packs.length > 0 ? ` \x1b[90m(${r.packs.join(', ')})\x1b[0m` : '';
-      console.log(`  • \x1b[1m\x1b[36m${r.name}\x1b[0m${mcpTag}${packsTag}`);
-      console.log(`    \x1b[90m${r.description}\x1b[0m\n`);
-    }
-
-    console.log(`\x1b[34mTip: To activate a skill for your current project, run:\x1b[0m`);
-    console.log(`  skill-manager activate ${results[0].name}\n`);
-    return results;
-  }
-
-  // Check if query matched a pack name
-  const matchedPackKeys = Object.keys(packs).filter(k => k.includes(q) || packs[k].name.toLowerCase().includes(q));
-  if (matchedPackKeys.length > 0) {
-    console.log(`\x1b[32mFound matching Skill Pack(s):\x1b[0m\n`);
-    for (const pk of matchedPackKeys) {
-      const pack = packs[pk];
-      console.log(`  📦 \x1b[1m\x1b[36m${pk}\x1b[0m - ${pack.name}`);
-      console.log(`     ${pack.description}`);
-      console.log(`     Skills (${pack.skills.length}): \x1b[90m${pack.skills.join(', ')}\x1b[0m\n`);
-    }
-    return [];
-  }
-
-  // Fallback notice
-  console.log(`\x1b[33mNo local skill matched "${query}".\x1b[0m\n`);
-  console.log(`\x1b[1mOnline Fallback Discovery:\x1b[0m`);
-  console.log(`You can search the public registry with:`);
-  console.log(`  \x1b[36mnpx skills find ${query}\x1b[0m\n`);
-  console.log(`If \`find-skills\` is not installed, add it with:`);
-  console.log(`  \x1b[36mnpx skills add https://github.com/vercel-labs/skills --skill find-skills\x1b[0m\n`);
-
-  return [];
 }
 
 // ==========================================
@@ -348,7 +540,6 @@ function activateSkillOrPack(targetName, options = {}) {
 
   let skillsToActivate = [];
 
-  // Check if it's a pack
   if (packs[targetName]) {
     skillsToActivate = packs[targetName].skills;
     console.log(`\x1b[36mActivating pack "${targetName}" (${skillsToActivate.length} skills)...\x1b[0m`);
@@ -381,7 +572,7 @@ function activateSkillOrPack(targetName, options = {}) {
     const scope = isGlobal ? 'globally' : 'for current project';
     console.log(`\n\x1b[32m✔ Successfully activated ${successCount} skill(s) ${scope}.\x1b[0m`);
     if (!isGlobal) {
-      console.log(`\x1b[90mActivated skills live in: ${targetRoot}\x1b[0m`);
+      console.log(`\x1b[90mActive skills located in: ${targetRoot}\x1b[0m`);
     }
   }
 }
@@ -405,9 +596,9 @@ function deactivateSkill(targetName, options = {}) {
 }
 
 // ==========================================
-// Ingestion & Archiving
+// Ingest & Archive with Duplicate Control
 // ==========================================
-function archiveSkill(sourcePath) {
+function archiveSkill(sourcePath, options = {}) {
   const libraryDir = getLibraryPath();
   const absSource = path.resolve(sourcePath);
 
@@ -419,15 +610,26 @@ function archiveSkill(sourcePath) {
   const skillName = path.basename(absSource);
   const targetDir = path.join(libraryDir, skillName);
 
-  console.log(`Archiving "${skillName}" into library...`);
+  const cmp = compareSkillDirectories(absSource, targetDir);
+
+  if (cmp.status === 'IDENTICAL' && !options.force) {
+    console.log(`\x1b[33mNotice: "${skillName}" already exists identically in the warehouse.\x1b[0m`);
+  } else if (cmp.status === 'MODIFIED') {
+    console.log(`\x1b[33mWarning: "${skillName}" already exists in warehouse with different content (${cmp.diff}).\x1b[0m`);
+    if (options.backup) {
+      const backupDir = path.join(libraryDir, `${skillName}.backup-${Date.now()}`);
+      copyDirSync(targetDir, backupDir);
+      console.log(`  \x1b[36mCreated backup at: ${backupDir}\x1b[0m`);
+    }
+  }
+
   copyDirSync(absSource, targetDir);
 
-  // If source was in global config, remove it to clean global prompt
   const globalPath = getGlobalSkillsPath();
   if (absSource.startsWith(globalPath)) {
     try {
       fs.rmSync(absSource, { recursive: true, force: true });
-      console.log(`\x1b[32m✔ Removed from global skills to save token overhead.\x1b[0m`);
+      console.log(`\x1b[32m✔ Removed from global skills to liberate prompt tokens.\x1b[0m`);
     } catch (_) {}
   }
 
@@ -436,102 +638,51 @@ function archiveSkill(sourcePath) {
 }
 
 // ==========================================
-// Gentle Global Migration & Pre-Analysis
+// Intelligent Migration & User Advisory
 // ==========================================
-const ESSENTIAL_GLOBAL_SKILLS = new Set([
-  'skill-manager',
-  'skill-archiver',
-  'find-skills'
-]);
-
-function analyzeGlobalSkills() {
-  const globalDir = getGlobalSkillsPath();
-  if (!fs.existsSync(globalDir)) {
-    return { essentials: [], important: [], projectSpecific: [] };
-  }
-
-  const entries = fs.readdirSync(globalDir, { withFileTypes: true });
-  const essentials = [];
-  const important = [];
-  const projectSpecific = [];
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const name = entry.name;
-    const skillPath = path.join(globalDir, name);
-
-    if (ESSENTIAL_GLOBAL_SKILLS.has(name)) {
-      essentials.push({ name, path: skillPath, reason: 'Skill-Manager core ecosystem' });
-      continue;
-    }
-
-    const meta = extractSkillMetadata(skillPath);
-
-    // Identify important skills
-    if (meta.mcpRelated) {
-      important.push({
-        name,
-        path: skillPath,
-        reason: 'Integrates with MCP Servers / External Tools'
-      });
-    } else if (
-      name.includes('guardrail') ||
-      name.includes('prevention') ||
-      name.includes('safety') ||
-      name.includes('pilot') ||
-      name.includes('governance')
-    ) {
-      important.push({
-        name,
-        path: skillPath,
-        reason: 'Execution safety or governance rule'
-      });
-    } else {
-      projectSpecific.push({
-        name,
-        path: skillPath,
-        reason: 'Specialized domain/project workflow'
-      });
-    }
-  }
-
-  return { essentials, important, projectSpecific };
-}
-
 async function runMigration(options = {}) {
-  const analysis = analyzeGlobalSkills();
+  const analysis = analyzeAllGlobalSkills();
   const libraryDir = getLibraryPath();
-  const globalDir = getGlobalSkillsPath();
 
-  console.log(`\n\x1b[1m══════════════════════════════════════════════════════════\x1b[0m`);
-  console.log(`\x1b[1m        Antigravity Global Skills Analysis & Migration   \x1b[0m`);
-  console.log(`\x1b[1m══════════════════════════════════════════════════════════\x1b[0m\n`);
-  console.log(`Global directory: \x1b[36m${globalDir}\x1b[0m`);
-  console.log(`Library warehouse: \x1b[36m${libraryDir}\x1b[0m\n`);
+  console.log(`\n\x1b[1m══════════════════════════════════════════════════════════════════════════\x1b[0m`);
+  console.log(`\x1b[1m               Antigravity Global Skills Advisory & Migration             \x1b[0m`);
+  console.log(`\x1b[1m══════════════════════════════════════════════════════════════════════════\x1b[0m\n`);
 
-  console.log(`\x1b[32m✔ Core Essentials to KEEP in Global (${analysis.essentials.length}):\x1b[0m`);
-  if (analysis.essentials.length === 0) {
-    console.log(`  (None currently present. Remember to install skill-manager!)`);
-  } else {
-    analysis.essentials.forEach(e => console.log(`  • ${e.name} \x1b[90m(${e.reason})\x1b[0m`));
-  }
+  console.log(`Detected Active MCP Servers: \x1b[33m${analysis.configuredMcp.join(', ') || 'None'}\x1b[0m`);
+  console.log(`Current Global Active Skills: \x1b[36m${analysis.total}\x1b[0m (injecting ~${analysis.summary.totalTokens} prompt tokens/turn)\n`);
 
-  console.log(`\n\x1b[33m⚡ Important Skills Identified (${analysis.important.length}):\x1b[0m`);
-  console.log(`  \x1b[90mThese skills are linked to MCP tools or safety guardrails.\x1b[0m`);
-  analysis.important.forEach(i => console.log(`  • \x1b[1m${i.name}\x1b[0m - \x1b[33m${i.reason}\x1b[0m`));
+  // Group 1: Core Essentials
+  console.log(`\x1b[32m[1] Core System Skills - MUST KEEP GLOBAL (${analysis.summary.core.length}):\x1b[0m`);
+  analysis.summary.core.forEach(s => {
+    console.log(`  • \x1b[1m${s.name}\x1b[0m \x1b[90m(${s.reason})\x1b[0m`);
+  });
 
-  console.log(`\n\x1b[36m📦 Specialized Skills Recommended for Warehouse Migration (${analysis.projectSpecific.length}):\x1b[0m`);
-  console.log(`  \x1b[90mMoving these to the warehouse eliminates prompt token bloat in every chat.\x1b[0m`);
-  analysis.projectSpecific.forEach(p => console.log(`  • ${p.name}`));
+  // Group 2: Safety Guardrails
+  console.log(`\n\x1b[33m[2] Safety Guardrails - RECOMMENDED TO KEEP GLOBAL (${analysis.summary.safety.length}):\x1b[0m`);
+  analysis.summary.safety.forEach(s => {
+    console.log(`  • \x1b[1m${s.name}\x1b[0m`);
+    console.log(`    \x1b[90m${s.reason}\x1b[0m`);
+  });
 
-  if (analysis.projectSpecific.length === 0 && analysis.important.length === 0) {
-    console.log(`\n\x1b[32mGlobal skills directory is already clean and optimal!\x1b[0m\n`);
-    return;
-  }
+  // Group 3: MCP Linked
+  console.log(`\n\x1b[35m[3] Configured MCP Integrations - GENTLE USER CONFIRMATION (${analysis.summary.mcp.length}):\x1b[0m`);
+  analysis.summary.mcp.forEach(s => {
+    console.log(`  • \x1b[1m${s.name}\x1b[0m \x1b[33m(Servers: ${s.linkedMcpServers.join(', ') || 'Generic MCP'})\x1b[0m`);
+    console.log(`    \x1b[90m${s.reason}\x1b[0m`);
+  });
+
+  // Group 4: Specialized
+  console.log(`\n\x1b[36m[4] Specialized Domain Skills - SAFE TO ARCHIVE (${analysis.summary.specialized.length}):\x1b[0m`);
+  console.log(`  \x1b[90mMoving these to the library saves prompt tokens on every turn while keeping them accessible.\x1b[0m`);
+
+  // Duplicate analysis
+  console.log(`\n\x1b[1mWarehouse Duplicate Status:\x1b[0m`);
+  console.log(`  • Identical copies already in warehouse: \x1b[32m${analysis.summary.identicalInWarehouse.length}\x1b[0m (100% safe to remove from global)`);
+  console.log(`  • Modified copies in warehouse: \x1b[33m${analysis.summary.modifiedInWarehouse.length}\x1b[0m`);
 
   if (options.dryRun) {
-    console.log(`\n\x1b[33mDry-run mode: No files were moved.\x1b[0m\n`);
-    return;
+    console.log(`\n\x1b[33m[DRY-RUN]: No changes executed.\x1b[0m\n`);
+    return analysis;
   }
 
   const rl = readline.createInterface({
@@ -541,39 +692,50 @@ async function runMigration(options = {}) {
 
   const question = (str) => new Promise(resolve => rl.question(str, resolve));
 
-  console.log('\n----------------------------------------------------------');
-  const answerGeneral = options.yes ? 'y' : await question(`Archive all ${analysis.projectSpecific.length} specialized skills to the local warehouse? (y/N): `);
-
-  if (answerGeneral.toLowerCase() === 'y') {
-    for (const skill of analysis.projectSpecific) {
-      const dest = path.join(libraryDir, skill.name);
-      copyDirSync(skill.path, dest);
-      fs.rmSync(skill.path, { recursive: true, force: true });
+  // Step 1: Specialized skills
+  if (analysis.summary.specialized.length > 0) {
+    console.log('\n----------------------------------------------------------');
+    const answer = options.yes ? 'y' : await question(`Archive all ${analysis.summary.specialized.length} specialized domain skills to warehouse? (y/N): `);
+    if (answer.toLowerCase() === 'y') {
+      for (const skill of analysis.summary.specialized) {
+        const target = path.join(libraryDir, skill.folderName);
+        copyDirSync(skill.path, target);
+        fs.rmSync(skill.path, { recursive: true, force: true });
+      }
+      console.log(`\x1b[32m✔ Moved ${analysis.summary.specialized.length} skills to warehouse.\x1b[0m`);
     }
-    console.log(`\x1b[32m✔ Archived ${analysis.projectSpecific.length} specialized skills.\x1b[0m`);
   }
 
-  if (analysis.important.length > 0) {
+  // Step 2: MCP Linked skills
+  if (analysis.summary.mcp.length > 0) {
     console.log('\n----------------------------------------------------------');
-    console.log('Now reviewing Important / MCP-related skills:');
-    for (const imp of analysis.important) {
-      const ans = options.yes ? 'n' : await question(`Archive "${imp.name}" (${imp.reason}) to warehouse? (y/N) [Default: N to keep global]: `);
+    console.log('Reviewing MCP-linked skills:');
+    for (const mcpSkill of analysis.summary.mcp) {
+      const promptText = `Archive "${mcpSkill.name}" (${mcpSkill.linkedMcpServers.join(', ') || 'MCP'}) to warehouse? (y/N) [Default: N to keep global]: `;
+      const ans = options.yes ? 'n' : await question(promptText);
       if (ans.toLowerCase() === 'y') {
-        const dest = path.join(libraryDir, imp.name);
-        copyDirSync(imp.path, dest);
-        fs.rmSync(imp.path, { recursive: true, force: true });
-        console.log(`  \x1b[32m✔ Moved ${imp.name} to warehouse.\x1b[0m`);
+        const target = path.join(libraryDir, mcpSkill.folderName);
+        copyDirSync(mcpSkill.path, target);
+        fs.rmSync(mcpSkill.path, { recursive: true, force: true });
+        console.log(`  \x1b[32m✔ Moved ${mcpSkill.name} to warehouse.\x1b[0m`);
       } else {
-        console.log(`  \x1b[90mKept ${imp.name} in global.\x1b[0m`);
+        console.log(`  \x1b[90mPreserved ${mcpSkill.name} in global.\x1b[0m`);
       }
     }
   }
 
+  // Step 3: Safety Guardrails
+  if (analysis.summary.safety.length > 0) {
+    console.log('\n----------------------------------------------------------');
+    console.log('Safety guardrails: Defaulting to PRESERVE in global.');
+  }
+
   rl.close();
 
-  // Reindex library after changes
+  // Reindex catalog
   reindexCatalog({ verbose: true });
-  console.log(`\n\x1b[32m✔ Migration process complete! Context window tokens successfully liberated.\x1b[0m\n`);
+  console.log(`\n\x1b[32m✔ Optimization completed! Context window tokens successfully liberated.\x1b[0m\n`);
+  return analysis;
 }
 
 // ==========================================
@@ -588,18 +750,75 @@ async function main() {
       reindexCatalog();
       break;
 
-    case 'search':
-    case 'find':
-      searchSkills(args[1]);
+    case 'analyze':
+    case 'check': {
+      const analysis = analyzeAllGlobalSkills();
+      console.log(`\n\x1b[1mAntigravity Global Skills Analysis:\x1b[0m`);
+      console.log(`Total Global Skills: \x1b[36m${analysis.total}\x1b[0m (~${analysis.summary.totalTokens} prompt tokens/turn)`);
+      console.log(`Detected MCP Servers: \x1b[33m${analysis.configuredMcp.join(', ') || 'None'}\x1b[0m`);
+      console.log(`  • Core System:        \x1b[32m${analysis.summary.core.length}\x1b[0m`);
+      console.log(`  • Safety Guardrails:  \x1b[33m${analysis.summary.safety.length}\x1b[0m`);
+      console.log(`  • MCP Linked:         \x1b[35m${analysis.summary.mcp.length}\x1b[0m`);
+      console.log(`  • Specialized Domain: \x1b[36m${analysis.summary.specialized.length}\x1b[0m`);
+      console.log(`  • Identical in Lib:   \x1b[32m${analysis.summary.identicalInWarehouse.length}\x1b[0m\n`);
       break;
+    }
+
+    case 'duplicates': {
+      const analysis = analyzeAllGlobalSkills();
+      console.log(`\n\x1b[1mDuplicate Analysis between Global and Warehouse:\x1b[0m\n`);
+      const dups = analysis.skills.filter(s => s.duplicateStatus !== 'UNIQUE');
+      if (dups.length === 0) {
+        console.log(`No duplicates found.`);
+      } else {
+        dups.forEach(d => {
+          const color = d.duplicateStatus === 'IDENTICAL' ? '\x1b[32m' : '\x1b[33m';
+          console.log(`  • \x1b[1m${d.name}\x1b[0m: ${color}${d.duplicateStatus}\x1b[0m - ${d.duplicateDiff}`);
+        });
+      }
+      console.log('');
+      break;
+    }
+
+    case 'search':
+    case 'find': {
+      const query = args[1];
+      if (!query) {
+        console.log('\x1b[33mPlease provide a keyword to search.\x1b[0m');
+        process.exit(1);
+      }
+      const cat = getCatalogData();
+      const q = query.toLowerCase();
+      const results = cat.skills.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q) ||
+        s.packs.some(p => p.toLowerCase().includes(q))
+      );
+
+      console.log(`\nSearch results for "\x1b[36m${query}\x1b[0m" (${results.length} found):\n`);
+      if (results.length > 0) {
+        results.forEach(r => {
+          const mcp = r.mcpRelated ? ' \x1b[33m[MCP]\x1b[0m' : '';
+          const p = r.packs.length ? ` \x1b[90m(${r.packs.join(', ')})\x1b[0m` : '';
+          console.log(`  • \x1b[1m\x1b[36m${r.name}\x1b[0m${mcp}${p}`);
+          console.log(`    \x1b[90m${r.description}\x1b[0m\n`);
+        });
+      } else {
+        console.log(`No local skill matched "${query}".`);
+        console.log(`Try searching online: \x1b[36mnpx skills find ${query}\x1b[0m\n`);
+      }
+      break;
+    }
 
     case 'list': {
       const cat = getCatalogData();
-      console.log(`\n\x1b[1mOffline Skill Warehouse (${cat.totalSkills} skills):\x1b[0m`);
+      console.log(`\n\x1b[1mOffline Skill Warehouse (${cat.totalSkills} skills, ~${cat.estimatedTokensSaved} tokens saved):\x1b[0m\n`);
       cat.skills.forEach(s => {
-        const pTag = s.packs.length ? ` \x1b[90m[${s.packs.join(',')}]\x1b[0m` : '';
-        console.log(`  • \x1b[36m${s.name}\x1b[0m${pTag}`);
+        const mcp = s.mcpRelated ? ' \x1b[33m[MCP]\x1b[0m' : '';
+        const p = s.packs.length ? ` \x1b[90m[${s.packs.join(',')}]\x1b[0m` : '';
+        console.log(`  • \x1b[36m${s.name}\x1b[0m${mcp}${p}`);
       });
+      console.log('');
       break;
     }
 
@@ -614,38 +833,33 @@ async function main() {
       break;
     }
 
-    case 'activate':
-    case 'enable': {
+    case 'activate': {
       const target = args[1];
       if (!target) {
         console.log('\x1b[31mUsage: skill-manager activate <skill-name|pack-name> [--global]\x1b[0m');
         process.exit(1);
       }
-      const isGlobal = args.includes('--global');
-      activateSkillOrPack(target, { global: isGlobal });
+      activateSkillOrPack(target, { global: args.includes('--global') });
       break;
     }
 
-    case 'deactivate':
-    case 'disable': {
+    case 'deactivate': {
       const target = args[1];
       if (!target) {
         console.log('\x1b[31mUsage: skill-manager deactivate <skill-name> [--global]\x1b[0m');
         process.exit(1);
       }
-      const isGlobal = args.includes('--global');
-      deactivateSkill(target, { global: isGlobal });
+      deactivateSkill(target, { global: args.includes('--global') });
       break;
     }
 
-    case 'archive':
-    case 'ingest': {
-      const targetPath = args[1];
-      if (!targetPath) {
+    case 'archive': {
+      const target = args[1];
+      if (!target) {
         console.log('\x1b[31mUsage: skill-manager archive <path-to-skill-folder>\x1b[0m');
         process.exit(1);
       }
-      archiveSkill(targetPath);
+      archiveSkill(target, { backup: args.includes('--backup'), force: args.includes('--force') });
       break;
     }
 
@@ -658,12 +872,14 @@ async function main() {
 
     case 'status': {
       const cat = getCatalogData();
-      const analysis = analyzeGlobalSkills();
+      const analysis = analyzeAllGlobalSkills();
       console.log('\n\x1b[1mAntigravity Skill Ecosystem Status:\x1b[0m');
-      console.log(`  Warehouse location: \x1b[36m${getLibraryPath()}\x1b[0m`);
-      console.log(`  Dormant skills stored: \x1b[32m${cat.totalSkills}\x1b[0m`);
-      console.log(`  Global active skills: \x1b[33m${analysis.essentials.length + analysis.important.length + analysis.projectSpecific.length}\x1b[0m`);
-      console.log(`  Workspace skills dir: \x1b[36m${getProjectSkillsPath()}\x1b[0m\n`);
+      console.log(`  Warehouse location:     \x1b[36m${getLibraryPath()}\x1b[0m`);
+      console.log(`  Dormant skills stored:  \x1b[32m${cat.totalSkills}\x1b[0m`);
+      console.log(`  Tokens saved per turn:  \x1b[32m~${cat.estimatedTokensSaved} tokens\x1b[0m`);
+      console.log(`  Global active skills:   \x1b[33m${analysis.total}\x1b[0m`);
+      console.log(`  Configured MCP servers: \x1b[35m${analysis.configuredMcp.join(', ') || 'None'}\x1b[0m`);
+      console.log(`  Workspace skills dir:   \x1b[36m${getProjectSkillsPath()}\x1b[0m\n`);
       break;
     }
 
@@ -676,6 +892,8 @@ async function main() {
   skill-manager <command> [arguments]
 
 \x1b[1mCOMMANDS:\x1b[0m
+  \x1b[36manalyze\x1b[0m                  Intelligently inspect global skills, MCP links & token impact
+  \x1b[36mduplicates\x1b[0m               Check for identical or conflicting copies in warehouse
   \x1b[36msearch <keyword>\x1b[0m         Search local warehouse by keyword, tag, or pack
   \x1b[36mactivate <name|pack>\x1b[0m     Activate skill or pack in current project (.agents/skills/)
   \x1b[36mactivate <name> --global\x1b[0m Activate skill globally (~/.gemini/config/skills/)
@@ -684,7 +902,7 @@ async function main() {
   \x1b[36mpacks\x1b[0m                    List available curated skill packs
   \x1b[36mreindex\x1b[0m                  Regenerate catalog.json and CATALOG.md from warehouse
   \x1b[36marchive <dir>\x1b[0m            Ingest a skill directory into the warehouse and re-index
-  \x1b[36mmigrate [--dry-run]\x1b[0m      Analyze and gently migrate global skills to the warehouse
+  \x1b[36mmigrate [--dry-run]\x1b[0m      Analyze, advise, and migrate global skills to warehouse
   \x1b[36mstatus\x1b[0m                   Display library and active skills statistics
   \x1b[36mhelp\x1b[0m                     Show this help screen
 `);
@@ -692,7 +910,26 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error('\x1b[31mFatal error:\x1b[0m', err);
-  process.exit(1);
-});
+// Export internal functions for unit testing
+module.exports = {
+  getUserHome,
+  getLibraryPath,
+  getGlobalSkillsPath,
+  getProjectSkillsPath,
+  getConfiguredMcpServers,
+  compareSkillDirectories,
+  extractSkillMetadata,
+  analyzeSkill,
+  analyzeAllGlobalSkills,
+  reindexCatalog,
+  archiveSkill,
+  activateSkillOrPack,
+  deactivateSkill
+};
+
+if (require.main === module) {
+  main().catch(err => {
+    console.error('\x1b[31mFatal error:\x1b[0m', err);
+    process.exit(1);
+  });
+}

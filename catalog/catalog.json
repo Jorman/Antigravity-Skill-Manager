@@ -1,8 +1,21 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-20T20:04:50.962Z",
-  "libraryPath": "C:\\Users\\jorma\\AppData\\Local\\Temp\\skill-mgr-test-4kzorP\\skill-library",
-  "totalSkills": 2,
+  "generatedAt": "2026-09-20T20:36:23.512Z",
+  "libraryPath": "C:\\Users\\jorma\\.gemini\\skill-library",
+  "configuredMcpServers": [
+    "agentmemory",
+    "github",
+    "graphify",
+    "stitch",
+    "stripe",
+    "supabase",
+    "mem0-supabase",
+    "ruflo",
+    "notebooks",
+    "visualization"
+  ],
+  "totalSkills": 77,
+  "estimatedTokensSaved": 5811,
   "packs": [
     "stitch-ui",
     "gcp-bigquery",
@@ -13,19 +26,1012 @@
   ],
   "skills": [
     {
-      "name": "test-mcp-skill",
-      "folderName": "test-mcp-skill",
-      "description": "Tool using call_mcp_tool for database inspection",
+      "name": "alpha-research",
+      "folderName": "alpha-research",
+      "description": "Search, read, and query research papers via Feynman's alphaXiv-backed alpha tools. Use when the user asks about academic papers, wants to find research on a topic, needs to read a specific paper, ask questions about a paper, inspect a paper's code repository, or manage paper annotations.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\alpha-research",
+      "tokenEstimate": 110,
       "mcpRelated": true,
-      "path": "C:\\Users\\jorma\\AppData\\Local\\Temp\\skill-mgr-test-4kzorP\\skill-library\\test-mcp-skill",
+      "linkedMcpServers": [
+        "github"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "alphafold2",
+      "folderName": "alphafold2",
+      "description": "Predict or audit protein structures with AlphaFold2-style workflows. Use when a research task needs monomer/multimer structure prediction, MSA/template handling, confidence metrics, or comparison against PDB/AlphaFold references.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\alphafold2",
+      "tokenEstimate": 92,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "autoresearch",
+      "folderName": "autoresearch",
+      "description": "Bounded research experiment loop that tries hypotheses, measures benchmark evidence, keeps what works, and records what fails. Use when the user asks to optimize a research metric, run an experiment loop, improve model/retrieval/evaluation performance iteratively, or benchmark a research hypothesis.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\autoresearch",
+      "tokenEstimate": 112,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "bigquery-data-transfer-service",
+      "folderName": "bigquery-data-transfer-service",
+      "description": "Discovers and inspects BigQuery Data Transfer Service (DTS) configurations.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\bigquery-data-transfer-service",
+      "tokenEstimate": 53,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "boltz",
+      "folderName": "boltz",
+      "description": "Run or plan Boltz biomolecular structure predictions for proteins, complexes, ligands, or nucleic-acid assemblies. Use when a task asks for Boltz setup, inputs, outputs, confidence interpretation, or reproduction.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\boltz",
+      "tokenEstimate": 86,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "borzoi",
+      "folderName": "borzoi",
+      "description": "Use Borzoi-style regulatory genomics models for sequence-to-expression or variant-effect analysis. Use when the task asks for noncoding variant impact, regulatory sequence design, or expression prediction.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\borzoi",
+      "tokenEstimate": 84,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "building-data-apps",
+      "folderName": "building-data-apps",
+      "description": "Build modern data apps, dashboards, and interactive reports using either",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\building-data-apps",
+      "tokenEstimate": 49,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "visualization"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "chai1",
+      "folderName": "chai1",
+      "description": "Run or prepare Chai-1 structure predictions for biomolecular complexes. Use when a task asks for Chai-1 inputs, multimers, ligand/nucleic acid structure prediction, or confidence review.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\chai1",
+      "tokenEstimate": 78,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "compute-env-setup",
+      "folderName": "compute-env-setup",
+      "description": "Set up a reproducible Feynman compute environment for research jobs. Use when a task needs Python/R packages, GPU libraries, containers, Modal, SSH, caches, or managed model runtime setup.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\compute-env-setup",
+      "tokenEstimate": 82,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
       "packs": []
     },
     {
-      "name": "test-react-skill",
-      "folderName": "test-react-skill",
-      "description": "High-performance React UI testing components",
+      "name": "contributing",
+      "folderName": "contributing",
+      "description": "Contribute changes to the Feynman repository itself. Use when the task is to add features, fix bugs, update prompts or skills, change install or release behavior, improve docs, or prepare a focused PR against this repo.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\contributing",
+      "tokenEstimate": 89,
       "mcpRelated": false,
-      "path": "C:\\Users\\jorma\\AppData\\Local\\Temp\\skill-mgr-test-4kzorP\\skill-library\\test-react-skill",
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "customize",
+      "folderName": "customize",
+      "description": "Configure Feynman specialists, skills, connectors, permissions, memory categories, compute providers, and project setup. Use when the task asks to customize the research workbench or create a reusable Feynman research capability.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\customize",
+      "tokenEstimate": 91,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "data-autocleaning",
+      "folderName": "data-autocleaning",
+      "description": "Automated data quality and transformation capabilities for Dataform/dbt/BigQuery",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\data-autocleaning",
+      "tokenEstimate": 51,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "dataform-bigquery",
+      "folderName": "dataform-bigquery",
+      "description": "Expertise in generating clean, correct, and efficient Dataform pipeline",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\dataform-bigquery",
+      "tokenEstimate": 48,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "dbt-bigquery",
+      "folderName": "dbt-bigquery",
+      "description": "Expert guidance for creating, modifying, and optimizing dbt pipelines",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\dbt-bigquery",
+      "tokenEstimate": 46,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "deep-research",
+      "folderName": "deep-research",
+      "description": "Run a thorough, source-heavy investigation on any topic. Use when the user asks for deep research, a comprehensive analysis, an in-depth report, or a multi-source investigation. Produces a cited research brief with provenance tracking.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\deep-research",
+      "tokenEstimate": 94,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "design-md",
+      "folderName": "design-md",
+      "description": "Analyze Stitch projects and synthesize a semantic design system into DESIGN.md files",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\design-md",
+      "tokenEstimate": 50,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": true,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "developing-with-bigquery",
+      "folderName": "developing-with-bigquery",
+      "description": "A repository of BigQuery-specific logic, knowledge, and specialized standards.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\developing-with-bigquery",
+      "tokenEstimate": 52,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "notebooks",
+        "visualization"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "diffdock",
+      "folderName": "diffdock",
+      "description": "Run or plan DiffDock molecular docking workflows. Use when a task asks for protein-ligand pose prediction, docking setup, ligand/protein preparation, pose ranking, or docking-result verification.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\diffdock",
+      "tokenEstimate": 81,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "discovering-gcp-data-assets",
+      "folderName": "discovering-gcp-data-assets",
+      "description": "Finds and inspects data assets within Google Cloud.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\discovering-gcp-data-assets",
+      "tokenEstimate": 46,
+      "mcpRelated": true,
+      "linkedMcpServers": [],
+      "hasGenericMcp": true,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "eli5",
+      "folderName": "eli5",
+      "description": "Explain research, papers, or technical ideas in plain English with minimal jargon, concrete analogies, and clear takeaways. Use when the user says \"ELI5 this\", asks for a simple explanation of a paper or research result, wants jargon removed, or asks what something technically dense actually means.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\eli5",
+      "tokenEstimate": 110,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "enhance-prompt",
+      "folderName": "enhance-prompt",
+      "description": "Transforms vague UI ideas into polished, Stitch-optimized prompts. Enhances specificity, adds UI/UX keywords, injects design system context, and structures output for better generation results.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\enhance-prompt",
+      "tokenEstimate": 82,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "esmfold2",
+      "folderName": "esmfold2",
+      "description": "Predict quick protein structures with ESMFold-style workflows. Use when a task needs fast MSA-free folding, sequence triage, variant structure screening, or confidence review.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\esmfold2",
+      "tokenEstimate": 76,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "evo2",
+      "folderName": "evo2",
+      "description": "Use Evo2-style biological sequence models for generation, scoring, or variant-effect analysis. Use when a task asks about DNA/RNA/protein sequence likelihood, editing, design, or long-context biological modeling.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\evo2",
+      "tokenEstimate": 85,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "fair-esm2",
+      "folderName": "fair-esm2",
+      "description": "Use ESM2 protein language models for embeddings, mutation scoring, remote homology, or representation analysis. Use when a task needs protein embeddings, zero-shot variant scores, clustering, or sequence-function triage.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\fair-esm2",
+      "tokenEstimate": 89,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "figure-composer",
+      "folderName": "figure-composer",
+      "description": "Compose a publication-grade multi-panel scientific figure from a claim, dataset, or draft result. Use when the task needs panel planning, consistent figure layout, figure review, or final figure assembly.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\figure-composer",
+      "tokenEstimate": 86,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "figure-style",
+      "folderName": "figure-style",
+      "description": "Apply scientific plotting and figure-quality rules to a single plot or panel. Use when drawing, cleaning, labeling, or reviewing plots for research artifacts.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\figure-style",
+      "tokenEstimate": 72,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "gcloud-auth-verification",
+      "folderName": "gcloud-auth-verification",
+      "description": "Guidelines for identifying and resolving missing Google Cloud authentication",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\gcloud-auth-verification",
+      "tokenEstimate": 52,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "notebooks"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "gcp-composer-troubleshooting",
+      "folderName": "gcp-composer-troubleshooting",
+      "description": "Provides expert guidance for troubleshooting Cloud Composer (Apache",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\gcp-composer-troubleshooting",
+      "tokenEstimate": 50,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "gcp-data-pipelines",
+      "folderName": "gcp-data-pipelines",
+      "description": "Primary entry point for building, managing, and orchestrating data pipelines",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\gcp-data-pipelines",
+      "tokenEstimate": 50,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "notebooks"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "gcp-dataflow",
+      "folderName": "gcp-dataflow",
+      "description": "Guides writing, packaging, executing, and troubleshooting Apache Beam pipelines on Dataflow. Use when creating new pipelines, configuring Flex Templates, or analyzing performance of Dataflow jobs. Capabilities include Java/Python/Go setup, Cloud Build integration, and deep diagnostic analysis of job health and autoscaling.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\gcp-dataflow",
+      "tokenEstimate": 119,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "github"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "gcp-pipeline-orchestration",
+      "folderName": "gcp-pipeline-orchestration",
+      "description": "This skill helps the agent generate or update orchestration pipeline",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\gcp-pipeline-orchestration",
+      "tokenEstimate": 50,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "notebooks"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "gcp-pipeline-resource-provisioning",
+      "folderName": "gcp-pipeline-resource-provisioning",
+      "description": "Automates declarative resource creation and provisioning for data pipelines, supporting BigQuery, Dataform, Dataproc, BigQuery Data Transfer Service (DTS), and other resources. It manages environment-specific configurations (dev, staging, prod) through a deployment.yaml file.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\gcp-pipeline-resource-provisioning",
+      "tokenEstimate": 112,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "gcp-spark",
+      "folderName": "gcp-spark",
+      "description": "Develops and executes Spark code on Dataproc Clusters and Serverless.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\gcp-spark",
+      "tokenEstimate": 46,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "notebooks"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "indication-dossier",
+      "folderName": "indication-dossier",
+      "description": "Build a source-backed biomedical indication dossier. Use when a research task asks for disease biology, target rationale, patient segmentation, biomarkers, trials, drugs, competitive landscape, or translational evidence.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\indication-dossier",
+      "tokenEstimate": 91,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "jobs",
+      "folderName": "jobs",
+      "description": "Inspect visible research run state, scheduled research follow-ups when available, and durable watch artifacts. Use when the user asks what's running for a research workflow or wants research-run status.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\jobs",
+      "tokenEstimate": 82,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "ligandmpnn",
+      "folderName": "ligandmpnn",
+      "description": "Design protein sequences around ligand or small-molecule contexts with LigandMPNN-style workflows. Use when a task asks for ligand-aware protein design, residue redesign, constraints, or design ranking.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\ligandmpnn",
+      "tokenEstimate": 84,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "literature-review",
+      "folderName": "literature-review",
+      "description": "Run a literature review using paper search and primary-source synthesis. Use when the user asks for a lit review, paper survey, state of the art, or academic landscape summary on a research topic.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\literature-review",
+      "tokenEstimate": 84,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "managed-model-endpoints",
+      "folderName": "managed-model-endpoints",
+      "description": "Register or audit Feynman-managed model endpoints. Use when a research workflow needs a local or remote model service, endpoint health checks, credential refs, startup scripts, or inference routing.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\managed-model-endpoints",
+      "tokenEstimate": 86,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "ml-best-practices",
+      "folderName": "ml-best-practices",
+      "description": "CRITICAL RULE: You MUST use this skill whenever the task involves any machine learning tasks or data analysis.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\ml-best-practices",
+      "tokenEstimate": 60,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "visualization"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "ml-training-recipe",
+      "folderName": "ml-training-recipe",
+      "description": "Find implementable ML training recipes from papers, datasets, docs, and code. Use when the user wants to fine-tune, train, reproduce, or choose a practical ML method, dataset, hyperparameter setup, or benchmark recipe.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\ml-training-recipe",
+      "tokenEstimate": 91,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "modal-compute",
+      "folderName": "modal-compute",
+      "description": "Run explicitly chosen research benchmark or replication jobs on Modal's serverless infrastructure. Use when a Feynman research workflow needs burst remote GPU compute and the Modal CLI is available.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\modal-compute",
+      "tokenEstimate": 84,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "notebook-guidance",
+      "folderName": "notebook-guidance",
+      "description": "-",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\notebook-guidance",
+      "tokenEstimate": 28,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "notebooks",
+        "visualization"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "gcp-bigquery"
+      ]
+    },
+    {
+      "name": "openfold3",
+      "folderName": "openfold3",
+      "description": "Run or plan OpenFold3-style structure prediction workflows. Use when a task asks for open protein or complex prediction, setup, model comparison, or reproducibility around OpenFold-family outputs.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\openfold3",
+      "tokenEstimate": 82,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "paper-code-audit",
+      "folderName": "paper-code-audit",
+      "description": "Compare a paper's claims against its public codebase. Use when the user asks to audit a paper, check code-claim consistency, verify reproducibility of a specific paper, or find mismatches between a paper and its implementation.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\paper-code-audit",
+      "tokenEstimate": 93,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "paper-narrative",
+      "folderName": "paper-narrative",
+      "description": "Shape the scientific story across a manuscript, abstract, figures, and evidence. Use when a task asks for paper structure, figure order, argument flow, missing analyses, or manuscript revision strategy.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\paper-narrative",
+      "tokenEstimate": 85,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "paper-writing",
+      "folderName": "paper-writing",
+      "description": "Turn research findings into a polished paper-style draft with sections, equations, and citations. Use when the user asks to write a paper, draft a report, write up findings, or produce a technical document from collected research.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\paper-writing",
+      "tokenEstimate": 93,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "pdf-explore",
+      "folderName": "pdf-explore",
+      "description": "Read, extract, and cross-check content across scientific PDFs. Use when a task needs methods, figures, tables, citations, accessions, or claims from multiple places in one or more papers.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\pdf-explore",
+      "tokenEstimate": 80,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "product-self-knowledge",
+      "folderName": "product-self-knowledge",
+      "description": "Answer questions about Feynman's own product behavior, runtime, settings, commands, skills, connectors, and package state. Use when a response would claim what Feynman can do or how it is wired.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\product-self-knowledge",
+      "tokenEstimate": 85,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "proteinmpnn",
+      "folderName": "proteinmpnn",
+      "description": "Design protein sequences from fixed backbone structures with ProteinMPNN-style workflows. Use when a task asks for backbone-conditioned sequence design, mutation suggestions, fixed residues, or design filtering.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\proteinmpnn",
+      "tokenEstimate": 87,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "react-vite-dashboard",
+      "folderName": "react-vite-dashboard",
+      "description": "Convert Stitch designs into production React + Vite dashboards with TanStack Query, accessible tokens from DESIGN.md, and Web3-ready patterns (ethers/viem).",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\react-vite-dashboard",
+      "tokenEstimate": 74,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "remote-compute-modal",
+      "folderName": "remote-compute-modal",
+      "description": "Dispatch Feynman research notebook or experiment jobs to Modal. Use when a task has explicitly chosen Modal for bounded cloud compute, GPU jobs, or reproducible remote execution.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\remote-compute-modal",
+      "tokenEstimate": 80,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "remote-compute-ssh",
+      "folderName": "remote-compute-ssh",
+      "description": "Run Feynman research jobs on SSH, Slurm, or lab hosts. Use when a task needs remote host setup, job submission, log harvest, artifact sync, or GPU/cluster execution outside Modal.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\remote-compute-ssh",
+      "tokenEstimate": 80,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "remotion",
+      "folderName": "remotion",
+      "description": "Generate walkthrough videos from Stitch projects using Remotion with smooth transitions, zooming, and text overlays",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\remotion",
+      "tokenEstimate": 58,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "github",
+        "stitch"
+      ],
+      "hasGenericMcp": true,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "replication",
+      "folderName": "replication",
+      "description": "Plan a replication of a paper, claim, or benchmark, and execute only after an explicit environment choice. Use when the user asks to replicate results, reproduce an experiment, verify a claim empirically, or build a replication package.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\replication",
+      "tokenEstimate": 94,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "research-review",
+      "folderName": "research-review",
+      "description": "Run a tough but constructive internal research critique of an AI research artifact. Use when the user asks for a review, critique, feedback on a paper or draft, or wants to identify weaknesses before submission.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\research-review",
+      "tokenEstimate": 88,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "runpod-compute",
+      "folderName": "runpod-compute",
+      "description": "Provision and manage GPU pods on RunPod for explicitly chosen long-running research experiments. Use when a Feynman replication, benchmark, or dataset-heavy research run needs persistent GPU compute with SSH access.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\runpod-compute",
+      "tokenEstimate": 89,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "scgpt",
+      "folderName": "scgpt",
+      "description": "Use scGPT-style single-cell foundation model workflows. Use when a task asks for single-cell embeddings, perturbation prediction, cell annotation, batch transfer, or gene-program analysis.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\scgpt",
+      "tokenEstimate": 78,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "scvi-tools",
+      "folderName": "scvi-tools",
+      "description": "Run scvi-tools single-cell workflows. Use when a task asks for scVI/scANVI setup, latent embeddings, batch correction, differential expression, cell annotation, or reproducible AnnData analysis.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\scvi-tools",
+      "tokenEstimate": 82,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "self-awareness",
+      "folderName": "self-awareness",
+      "description": "Inspect the active Feynman workbench session, artifacts, execution log, settings, and provenance. Use when the task asks what happened in this session, which files were written, what tools ran, or what remains unverified.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\self-awareness",
+      "tokenEstimate": 90,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "session-log",
+      "folderName": "session-log",
+      "description": "Write a durable session log capturing completed work, findings, open questions, and next steps. Use when the user asks to log progress, save session notes, write up what was done, or create a research diary entry.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\session-log",
+      "tokenEstimate": 87,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "session-search",
+      "folderName": "session-search",
+      "description": "Recover prior Feynman work from session transcripts. Use the optional /search command only when it is installed and visible; otherwise search local session JSONL files directly.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\session-search",
+      "tokenEstimate": 78,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "shadcn-ui",
+      "folderName": "shadcn-ui",
+      "description": "Expert guidance for integrating and building applications with shadcn/ui components, including component discovery, installation, customization, and best practices.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\shadcn-ui",
+      "tokenEstimate": 73,
+      "mcpRelated": true,
+      "linkedMcpServers": [],
+      "hasGenericMcp": true,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "solublempnn",
+      "folderName": "solublempnn",
+      "description": "Design or screen protein sequences for solubility-aware constraints with SolubleMPNN-style workflows. Use when a task asks for soluble protein design, expression-friendly variants, or solubility risk filtering.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\solublempnn",
+      "tokenEstimate": 86,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": [
+        "bio-research"
+      ]
+    },
+    {
+      "name": "source-comparison",
+      "folderName": "source-comparison",
+      "description": "Compare multiple sources on a topic and produce a grounded comparison matrix. Use when the user asks to compare papers, tools, approaches, frameworks, or claims across multiple sources.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\source-comparison",
+      "tokenEstimate": 81,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "stitch-loop",
+      "folderName": "stitch-loop",
+      "description": "Teaches agents to iteratively build websites using Stitch with an autonomous baton-passing loop pattern",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\stitch-loop",
+      "tokenEstimate": 56,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "github",
+        "stitch"
+      ],
+      "hasGenericMcp": true,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "stitch-plugins",
+      "folderName": "stitch-plugins",
+      "description": "No description provided",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\stitch-plugins",
+      "tokenEstimate": 0,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "stitch::code-to-design",
+      "folderName": "code-to-design",
+      "description": "Convert frontend code (Vite, React, Angular, Vue, etc.) to a Stitch Design by chaining",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\code-to-design",
+      "tokenEstimate": 54,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "stitch::extract-design-md",
+      "folderName": "extract-design-md",
+      "description": "Extract a comprehensive design system (DESIGN.md) directly from frontend source",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\extract-design-md",
+      "tokenEstimate": 53,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "stitch::extract-static-html",
+      "folderName": "extract-static-html",
+      "description": "Extract self-contained static HTML from a built web application or React components by inlining CSS and images. Use this skill whenever you need to capture a specific UI state, share a static version of a page, or prepare assets for Stitch upload, even if the user just asks to 'save the HTML' or 'mock the view'.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\extract-static-html",
+      "tokenEstimate": 120,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "stitch::generate-design",
+      "folderName": "generate-design",
+      "description": "Generate new screens from text prompts or images, edit existing screens",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\generate-design",
+      "tokenEstimate": 50,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "stitch::manage-design-system",
+      "folderName": "manage-design-system",
+      "description": "Manage design systems in Stitch using MCP tools. Includes retrieval of assets,",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\manage-design-system",
+      "tokenEstimate": 54,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": true,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "stitch::react-components",
+      "folderName": "react-components",
+      "description": "Converts Stitch designs into modular Vite and React components, or syncs/updates",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\react-components",
+      "tokenEstimate": 53,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "stitch::react-native",
+      "folderName": "react-native",
+      "description": "Convert Stitch HTML designs to React Native components, or syncs/updates existing",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\react-native",
+      "tokenEstimate": 52,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": false,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "stitch::upload-to-stitch",
+      "folderName": "upload-to-stitch",
+      "description": "Upload local assets (images, mockups, extracted HTML, design markdown) to a Stitch project.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\upload-to-stitch",
+      "tokenEstimate": 56,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": true,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "taste-design",
+      "folderName": "taste-design",
+      "description": "Semantic Design System Skill for Google Stitch. Generates agent-friendly DESIGN.md files that enforce premium, anti-generic UI standards — strict typography, calibrated color, asymmetric layouts, perpetual micro-motion, and hardware-accelerated performance.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\taste-design",
+      "tokenEstimate": 100,
+      "mcpRelated": true,
+      "linkedMcpServers": [
+        "stitch"
+      ],
+      "hasGenericMcp": true,
+      "packs": [
+        "stitch-ui"
+      ]
+    },
+    {
+      "name": "using-model-endpoint",
+      "folderName": "using-model-endpoint",
+      "description": "Call a configured Feynman model endpoint and interpret its response. Use when a task needs inference from a registered endpoint, remote model API, local model service, or custom connector-backed predictor.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\using-model-endpoint",
+      "tokenEstimate": 88,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
+      "packs": []
+    },
+    {
+      "name": "watch",
+      "folderName": "watch",
+      "description": "Create a research watch baseline and optionally schedule follow-up checks when scheduling tools are visible. Use when the user asks to monitor a field, track new papers, watch for updates, or set up alerts on a research area.",
+      "path": "C:\\Users\\jorma\\.gemini\\skill-library\\watch",
+      "tokenEstimate": 89,
+      "mcpRelated": false,
+      "linkedMcpServers": [],
+      "hasGenericMcp": false,
       "packs": []
     }
   ]

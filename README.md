@@ -99,23 +99,39 @@ The installer will:
 
 ---
 
-## 🧹 Liberate Existing Tokens: Migration Command
+## 🧹 Dynamic Analysis & Migration Engine
 
-If you already have dozens of skills in `~/.gemini/config/skills/`, run the intelligent migration tool:
+Skill-Manager features a **100% dynamic advisory engine** that works for **any user** on **any OS**, with **zero hardcoded skill names**:
 
 ```bash
-# Preview what will be moved
+# Detailed inspection of global skills, MCP links, and token weight
+node ./bin/skill-manager.cjs analyze
+
+# SHA-256 duplicate comparison between global skills and warehouse
+node ./bin/skill-manager.cjs duplicates
+
+# Preview migration without touching files
 node ./bin/skill-manager.cjs migrate --dry-run
 
-# Run migration
+# Run guided interactive migration
 node ./bin/skill-manager.cjs migrate
 ```
 
-### Safety & MCP Protection
-The migration engine automatically:
-- **Preserves** core management tools (`skill-manager`, `skill-archiver`, `find-skills`).
-- **Detects Important / MCP Skills**: Identifies skills linked to active MCP servers or execution safety guardrails (e.g. `graphify`, `accidental-data-loss-prevention`) and **gently asks confirmation** before touching them.
-- **Relocates** specialized domain skills to `~/.gemini/skill-library/` and updates the catalog.
+### 🧠 Intelligent Heuristic Advisory Matrix
+
+The analyzer dynamically discovers your configured MCP servers (reading `mcp_config.json` and active directories) and categorizes every skill:
+
+| Category | Heuristic | Recommendation |
+| :--- | :--- | :--- |
+| **`CORE_SYSTEM`** | Core ecosystem tools (`skill-manager`, `skill-archiver`, `find-skills`) | **Must Keep Global** |
+| **`SAFETY_GUARDRAIL`** | Safety checks, data-loss protection, terminal command interceptors | **Recommended Keep Global** |
+| **`MCP_LINKED`** | Skills calling your configured MCP servers (GitHub, Stripe, Supabase, Stitch, etc.) | **Gentle User Confirmation** (choose global or project) |
+| **`SPECIALIZED`** | Domain skills (React, Docker, Python, BigQuery, Biology, etc.) | **Safe to Archive** (liberates prompt tokens) |
+
+### 🔍 Deep Duplicate Detection (SHA-256)
+- **`IDENTICAL`**: Checksums match 100%. Safe to delete global copy immediately because an identical copy is already stored in the warehouse.
+- **`MODIFIED`**: Content differs. The tool warns you, shows which version is newer, and can create automated timestamped backups (`<name>.backup-<timestamp>`) before overwriting.
+- **`UNIQUE`**: New skill with no prior copy in the warehouse.
 
 ---
 
@@ -125,12 +141,14 @@ Once installed, talk to Antigravity naturally:
 
 | What you say in chat | What Antigravity does |
 | :--- | :--- |
+| *"Analizza le mie skill globali e controlla i token"* | Runs `analyze`, displays token breakdown, MCP dependencies, and duplicate status. |
+| *"Ci sono duplicati tra le skill globali e la warehouse?"* | Runs `duplicates`, compares SHA-256 checksums, and reports identical or modified copies. |
 | *"Abbiamo una skill per gestire React o Stitch?"* | Queries the local catalog and presents matching skills with descriptions. |
-| *"Cosa mi consigli per questo task?"* | Inspects the project files and recommends relevant local skills or packs. |
+| *"Cosa mi consigli per questo task?"* | Inspects project files and recommends relevant local skills or packs. |
 | *"Attiva la skill tdd per questo progetto"* | Copies `tdd` into `./.agents/skills/tdd` for the current repository only. |
-| *"Attiva il pacchetto stitch-ui"* | Copies all 15 Stitch UI skills into `./.agents/skills/`. |
-| *"Cerca una skill online per Web3/Solana"* | Searches `~/.gemini/skill-library/`; if not found, queries online via `find-skills`. |
-| *"Archivia questa nuova skill e aggiorna il catalogo"* | Stores the skill in `~/.gemini/skill-library/` and regenerates `catalog.json` and `CATALOG.md`. |
+| *"Attiva il pacchetto stitch-ui"* | Copies all Stitch UI skills into `./.agents/skills/`. |
+| *"Cerca una skill online per Web3/Solana"* | Searches local warehouse; if not found, queries online via `find-skills`. |
+| *"Archivia questa nuova skill e aggiorna il catalogo"* | Stores the skill in `~/.gemini/skill-library/` with conflict backup and regenerates `catalog.json` and `CATALOG.md`. |
 
 ---
 
@@ -139,6 +157,12 @@ Once installed, talk to Antigravity naturally:
 The zero-dependency CLI `bin/skill-manager.cjs` provides deterministic terminal commands:
 
 ```bash
+# Intelligently inspect global skills, MCP links & token impact
+node ./bin/skill-manager.cjs analyze
+
+# SHA-256 duplicate comparison between global skills and warehouse
+node ./bin/skill-manager.cjs duplicates
+
 # Search local warehouse by keyword, tag, or pack
 node ./bin/skill-manager.cjs search stitch
 
