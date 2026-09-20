@@ -91,6 +91,9 @@ Whenever skills are archived, migrated, or updated, the skill regenerates:
    *"The following skills connect to your configured MCP servers: [X, Y]. Would you like to keep them active globally or archive them to load only in relevant projects?"*
 5. Execute the move for approved items, delete the global copies, and re-index the catalog.
 6. Provide a summary of the actual tokens saved in the active session and remind the user to restart or reload Antigravity (`Ctrl+R`).
+   Always explain how the user can recall/reactivate archived skills at any time:
+   - **Conversational (Primary & Recommended)**: Tell the user they can simply ask in chat at any time (e.g. *"Attiva la suite Matt Pocock in questo progetto"* or *"Activate graphify here"*). The `skill-manager` skill will automatically copy the skill or full kit into `<project-root>/.agents/skills/`.
+   - **CLI Terminal (Alternative)**: Mention that they can also run `node <path-to-skill-manager>/bin/skill-manager.cjs activate <name-or-pack>` if they prefer using the terminal.
 
 ---
 

@@ -1287,6 +1287,11 @@ async function runMigration(options = {}) {
   // Reindex catalog
   reindexCatalog({ verbose: true });
   console.log(`\n\x1b[32m✔ Optimization completed! Context window tokens successfully liberated.\x1b[0m\n`);
+  console.log(`\x1b[36m📦 How to recall archived skills whenever needed:\x1b[0m`);
+  console.log(`  • \x1b[1mConversational (Recommended):\x1b[0m Simply ask Antigravity in chat:`);
+  console.log(`    "Activate <skill-name or pack> in this project" (e.g. "Activate Matt Pocock suite here")`);
+  console.log(`  • \x1b[1mCLI Terminal (Alternative):\x1b[0m`);
+  console.log(`    node bin/skill-manager.cjs activate <name-or-pack>\n`);
   printReloadReminder();
   return analysis;
 }
