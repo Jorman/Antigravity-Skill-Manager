@@ -1,0 +1,28 @@
+{
+  "name": "antigravity-skill-manager",
+  "version": "1.0.0",
+  "description": "Lightweight, on-demand skill management system for Google Antigravity",
+  "main": "bin/skill-manager.cjs",
+  "bin": {
+    "skill-manager": "bin/skill-manager.cjs"
+  },
+  "scripts": {
+    "test": "node test/test-cli.cjs",
+    "reindex": "node bin/skill-manager.cjs reindex"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jorman/Antigravity-Skill-Manager.git"
+  },
+  "keywords": [
+    "antigravity",
+    "gemini",
+    "skills",
+    "agent",
+    "agentic-coding",
+    "token-optimization",
+    "skill-library"
+  ],
+  "author": "Jorman",
+  "license": "MIT"
+}

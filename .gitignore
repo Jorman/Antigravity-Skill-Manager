@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and environment
+*.log
+.env
+.env.local
+
+# Scratch and test temps
+.scratch/mock*
+skill-mgr-test-*
+
+# Agent session artifacts (keep .agents/skills if shared, or ignore local tests)
+.agents/skills/test-*

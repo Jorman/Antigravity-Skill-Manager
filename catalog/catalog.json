@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-09-20T20:04:50.962Z",
+  "libraryPath": "C:\\Users\\jorma\\AppData\\Local\\Temp\\skill-mgr-test-4kzorP\\skill-library",
+  "totalSkills": 2,
+  "packs": [
+    "stitch-ui",
+    "gcp-bigquery",
+    "bio-research",
+    "dev-workflow",
+    "caveman",
+    "agent-authoring"
+  ],
+  "skills": [
+    {
+      "name": "test-mcp-skill",
+      "folderName": "test-mcp-skill",
+      "description": "Tool using call_mcp_tool for database inspection",
+      "mcpRelated": true,
+      "path": "C:\\Users\\jorma\\AppData\\Local\\Temp\\skill-mgr-test-4kzorP\\skill-library\\test-mcp-skill",
+      "packs": []
+    },
+    {
+      "name": "test-react-skill",
+      "folderName": "test-react-skill",
+      "description": "High-performance React UI testing components",
+      "mcpRelated": false,
+      "path": "C:\\Users\\jorma\\AppData\\Local\\Temp\\skill-mgr-test-4kzorP\\skill-library\\test-react-skill",
+      "packs": []
+    }
+  ]
+}

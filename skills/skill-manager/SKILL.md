@@ -1,0 +1,141 @@
+---
+name: skill-manager
+description: Manage, search, discover, recommend, and activate skills from the local offline warehouse (~/.gemini/skill-library) or online (skills.sh). Use when the user asks if a skill exists, asks for skill recommendations, wants to list/activate/enable/install a skill or pack (e.g. Stitch, GCP, BigQuery, Bio, Caveman, Dev-Workflow) for the current project or globally, or searches for skills online.
+---
+
+# Antigravity Skill Manager (On-Demand Activation & Discovery)
+
+This skill manages agent capabilities dynamically across all operating systems (Windows, macOS, Linux).
+It enables searching and activating skills **on-demand**, keeping the global context window ultra-light (~15,000+ prompt tokens saved per turn) while providing instant access to an offline warehouse and online registries.
+
+---
+
+## Architectural Principles
+
+1. **Global Active Skills** (`~/.gemini/config/skills/`):
+   Only a minimal set of universal skills resides here (e.g. `skill-manager`, `skill-archiver`, `find-skills`, and system safety rules).
+2. **Offline Warehouse** (`~/.gemini/skill-library/`):
+   Flat directory storing all dormant skills (`~/.gemini/skill-library/<skill-name>/`).
+   Catalog indexes: `~/.gemini/skill-library/CATALOG.md` (Markdown) and `~/.gemini/skill-library/catalog.json` (structured JSON).
+3. **Workspace Skills** (`<project-root>/.agents/skills/`):
+   Project-specific skills. When activated here, Antigravity loads them **only** when working inside this project, leaving all other conversations completely lean.
+
+---
+
+## Dynamic Cross-Platform Path Resolution
+
+Never hardcode drive letters or absolute user paths. Resolve dynamically:
+
+- **PowerShell (Windows)**:
+  ```powershell
+  $library = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".gemini\skill-library"
+  $globalSkills = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".gemini\config\skills"
+  $projectSkills = ".\.agents\skills"
+  ```
+- **Bash / Zsh (macOS / Linux)**:
+  ```bash
+  LIBRARY="$HOME/.gemini/skill-library"
+  GLOBAL_SKILLS="$HOME/.gemini/config/skills"
+  PROJECT_SKILLS="./.agents/skills"
+  ```
+- **Node.js**:
+  ```javascript
+  const library = path.join(os.homedir(), '.gemini', 'skill-library');
+  const projectSkills = path.join(process.cwd(), '.agents', 'skills');
+  ```
+
+---
+
+## Workflows & Capabilities
+
+### 1. Check If a Skill Exists / Search Warehouse
+When the user asks:
+- *"Do we have a skill for X?"* / *"Abbiamo una skill per..."*
+- *"Search for a skill that does..."*
+- *"Is there a skill for BigQuery / React / Docker / Biology?"*
+
+**Action:**
+1. Check `~/.gemini/skill-library/catalog.json` or `CATALOG.md` using `view_file` or CLI:
+   ```bash
+   node <path-to-skill-manager>/bin/skill-manager.cjs search "<query>"
+   ```
+2. If matches are found locally, present the skill name(s), descriptions, and tags to the user, and offer to activate them for the current project.
+3. If **no local match** is found, proceed to **Fallback Online Search**.
+
+---
+
+### 2. Recommend Skills for Current Project
+When the user asks:
+- *"What skills do you recommend for this project?"*
+- *"Quali skill locali possono essermi utili per questo task?"*
+
+**Action:**
+1. Inspect the current workspace files (`package.json`, `requirements.txt`, Dockerfiles, etc.) to understand the project domain.
+2. Read `~/.gemini/skill-library/catalog.json` to find complementary skills or curated packs (e.g. `stitch-ui` for frontend, `dev-workflow` for test-driven projects, `gcp-bigquery` for data engineering).
+3. Present 2-4 recommended skills to the user with a brief rationale and ask for confirmation before activating.
+
+---
+
+### 3. Activate Skills / Packs for the Current Project (Default)
+When the user says:
+- *"Attiva Stitch per questo progetto"* / *"Enable BigQuery skills here"*
+- *"Installa la skill react-components"* / *"Activate tdd"*
+
+**Action:**
+1. Target path: `<project-root>/.agents/skills/<skill-name>`.
+2. Ensure directory exists.
+3. Copy the skill directory recursively from `~/.gemini/skill-library/<skill-name>` into `<project-root>/.agents/skills/<skill-name>`.
+4. Or use the CLI:
+   ```bash
+   node <path-to-skill-manager>/bin/skill-manager.cjs activate <name-or-pack>
+   ```
+
+**PowerShell Example:**
+```powershell
+$library = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".gemini\skill-library"
+$target = ".\.agents\skills\react-components"
+if (-not (Test-Path ".\.agents\skills")) { New-Item -Path ".\.agents\skills" -ItemType Directory -Force }
+Copy-Item -Path (Join-Path $library "react-components") -Destination $target -Recurse -Force
+```
+
+---
+
+### 4. Activate Skills Globally (Explicit Request Only)
+Only when the user explicitly requests machine-wide global activation:
+1. Target path: `~/.gemini/config/skills/<skill-name>`.
+2. Copy from warehouse to global directory.
+3. Note to user: global skills add prompt token weight to every chat session.
+
+---
+
+### 5. Fallback Online Search & Installation (`find-skills`)
+When a skill is not found in the local warehouse:
+1. Check if `find-skills` is installed in `~/.gemini/config/skills/find-skills`.
+2. If **not present**, recommend and install it:
+   ```bash
+   npx skills add https://github.com/vercel-labs/skills --skill find-skills
+   ```
+3. Run online search:
+   ```bash
+   npx skills find "<query>"
+   ```
+4. Once identified, ask the user if they wish to install it into the local project or archive it directly into the warehouse.
+
+---
+
+### 6. Deactivate / Remove Skills
+- **From project**: Remove the folder from `<project-root>/.agents/skills/<skill-name>`.
+- **From global**: Move back to warehouse or delete if already present in warehouse.
+
+---
+
+## Built-In Curated Packs Reference
+
+| Pack Key | Name | Key Skills Included |
+| :--- | :--- | :--- |
+| `stitch-ui` | Google Stitch & UI Design | `code-to-design`, `design-md`, `enhance-prompt`, `extract-design-md`, `generate-design`, `manage-design-system`, `react-components`, `react-native`, `react-vite-dashboard`, `remotion`, `shadcn-ui`, `taste-design`, `upload-to-stitch` |
+| `gcp-bigquery` | GCP & BigQuery Data Eng | `bigquery-data-transfer-service`, `building-data-apps`, `data-autocleaning`, `dataform-bigquery`, `dbt-bigquery`, `developing-with-bigquery`, `discovering-gcp-data-assets`, `gcp-data-pipelines`, `gcp-dataflow`, `gcp-spark`, `ml-best-practices` |
+| `bio-research` | Feynman Research & Bio | `alphafold2`, `boltz`, `borzoi`, `chai1`, `diffdock`, `esmfold2`, `evo2`, `fair-esm2`, `ligandmpnn`, `openfold3`, `proteinmpnn`, `scgpt`, `scvi-tools`, `solublempnn`, `alpha-research`, `deep-research`, `literature-review`, `paper-writing`, `modal-compute`, `runpod-compute` |
+| `dev-workflow` | Quality & Development | `tdd`, `code-review`, `deming-cycle`, `diagnosing-bugs`, `resolving-merge-conflicts`, `setup-pre-commit` |
+| `caveman` | Token Compression | `caveman`, `caveman-commit`, `caveman-compress`, `caveman-help`, `caveman-review`, `caveman-stats`, `cavecrew` |
+| `agent-authoring`| Skill & Prompt Writing | `writing-for-agents`, `writing-beats`, `writing-fragments`, `writing-shape`, `skill-creator` |
