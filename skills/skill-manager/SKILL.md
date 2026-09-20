@@ -107,14 +107,11 @@ When the user says:
    ```bash
    node <path-to-skill-manager>/bin/skill-manager.cjs activate <name-or-pack>
    ```
+5. **Advise on Session Reload**:
+   - Remind the user: *"Skill activated! To have it loaded into the prompt, start a new conversation turn or reload Antigravity (`Ctrl+R`)."*
 
-**PowerShell Example:**
-```powershell
-$library = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".gemini\skill-library"
-$target = ".\.agents\skills\react-components"
-if (-not (Test-Path ".\.agents\skills")) { New-Item -Path ".\.agents\skills" -ItemType Directory -Force }
-Copy-Item -Path (Join-Path $library "react-components") -Destination $target -Recurse -Force
-```
+> [!NOTE]
+> **Antigravity Prompt Lifecycle**: The `<skills>` block in the system prompt is assembled at conversation/session startup. Any addition or removal of skills takes effect upon starting a new chat or reloading Antigravity (`Ctrl+R` / `Developer: Reload Window`).
 
 ---
 

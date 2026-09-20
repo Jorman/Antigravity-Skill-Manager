@@ -532,6 +532,10 @@ function copyDirSync(src, dest) {
   }
 }
 
+function printReloadReminder() {
+  console.log(`\x1b[36m💡 Tip: Start a new conversation or reload Antigravity (Ctrl+R) for skill changes to take effect in the active prompt.\x1b[0m\n`);
+}
+
 function activateSkillOrPack(targetName, options = {}) {
   const libraryDir = getLibraryPath();
   const isGlobal = options.global === true;
@@ -574,6 +578,7 @@ function activateSkillOrPack(targetName, options = {}) {
     if (!isGlobal) {
       console.log(`\x1b[90mActive skills located in: ${targetRoot}\x1b[0m`);
     }
+    printReloadReminder();
   }
 }
 
@@ -590,6 +595,7 @@ function deactivateSkill(targetName, options = {}) {
   try {
     fs.rmSync(destinationDir, { recursive: true, force: true });
     console.log(`\x1b[32m✔ Deactivated skill "${targetName}" from ${destinationDir}.\x1b[0m`);
+    printReloadReminder();
   } catch (err) {
     console.error(`\x1b[31m✖ Failed to deactivate:\x1b[0m`, err.message);
   }
@@ -635,6 +641,7 @@ function archiveSkill(sourcePath, options = {}) {
 
   reindexCatalog({ verbose: true });
   console.log(`\x1b[32m✔ Archived "${skillName}" successfully!\x1b[0m`);
+  printReloadReminder();
 }
 
 // ==========================================
@@ -882,6 +889,7 @@ async function runMigration(options = {}) {
   // Reindex catalog
   reindexCatalog({ verbose: true });
   console.log(`\n\x1b[32m✔ Optimization completed! Context window tokens successfully liberated.\x1b[0m\n`);
+  printReloadReminder();
   return analysis;
 }
 
