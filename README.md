@@ -60,7 +60,7 @@ You can use specialized 'skills' to help you with complex tasks...
 
 1. **Global Core (`~/.gemini/config/skills/`)**: Keep only essential management tools (`skill-manager`, `skill-archiver`, `find-skills`).
 2. **Offline Warehouse (`~/.gemini/skill-library/`)**: Store dozens of dormant skills offline. They consume **0 prompt tokens** until summoned.
-3. **Workspace-Level Activation (`<project>/.agents/skills/`)**: Activate skills or curated packs for the specific project you are working in. Antigravity mounts them only in that repository.
+3. **Workspace-Level Activation (`<project>/.agents/skills/`)**: Activate skills or curated packs for the specific project you are working in. Antigravity mounts them only in that repository. Fully compliant with **Antigravity 2.17.0+** per-project configuration (`.gemini/config.json`) and respects custom `personal_customization_dir` overrides.
 
 ### 📊 Token Impact Benchmark
 
@@ -182,6 +182,9 @@ node ./bin/skill-manager.cjs packs
 # List indivisible bundles and inspect member skills
 node ./bin/skill-manager.cjs bundles
 node ./bin/skill-manager.cjs bundle ask-matt
+
+# Isolate an MCP server to current project workspace (.agents/plugins/ and .gemini/config.json)
+node ./bin/skill-manager.cjs mcp isolate github
 
 # Activate a skill for current project (.agents/skills/)
 node ./bin/skill-manager.cjs activate react-components

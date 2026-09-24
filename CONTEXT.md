@@ -13,7 +13,7 @@ The minimal subset of universal skills kept in `~/.gemini/config/skills/` that a
 _Avoid_: Default skills, system skills
 
 **Workspace Skills (Project Skills)**:
-Skills copied into `<workspace-root>/.agents/skills/` to provide capabilities only for the active project, without leaking into other projects.
+Skills copied into `<workspace-root>/.agents/skills/` (or the folder defined by `personal_customization_dir` in `<workspace-root>/.gemini/config.json` in Antigravity 2.17.0+) to provide capabilities only for the active project, without leaking into other projects.
 _Avoid_: Local plugins, workspace extensions
 
 **Catalog**:

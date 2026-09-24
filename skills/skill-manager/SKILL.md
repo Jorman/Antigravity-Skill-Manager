@@ -18,7 +18,7 @@ It enables searching and activating skills **on-demand**, keeping the global con
    Flat directory storing all dormant skills (`~/.gemini/skill-library/<skill-name>/`).
    Catalog indexes: `~/.gemini/skill-library/CATALOG.md` (Markdown) and `~/.gemini/skill-library/catalog.json` (structured JSON).
 3. **Workspace Skills** (`<project-root>/.agents/skills/`):
-   Project-specific skills. When activated here, Antigravity loads them **only** when working inside this project, leaving all other conversations completely lean.
+   Project-specific skills. When activated here, Antigravity loads them **only** when working inside this project, leaving all other conversations completely lean. (Compliant with Antigravity 2.17.0+ per-project `.gemini/config.json` and custom `personal_customization_dir` overrides).
 
 ---
 
@@ -147,7 +147,7 @@ When a skill is not found in the local warehouse:
 ---
 
 ### 7. MCP Server Management & Project Workspace Isolation
-Antigravity supports both global MCP servers (`~/.gemini/config/mcp_config.json`) and per-project MCP isolation via workspace plugins (`<project-root>/.agents/plugins/<server>-mcp/mcp_config.json`):
+Antigravity supports both global MCP servers (`~/.gemini/config/mcp_config.json`) and per-project MCP isolation via workspace plugins (`<project-root>/.agents/plugins/<server>-mcp/mcp_config.json`), automatically registered and enabled in `<project-root>/.gemini/config.json`:
 - **Inspect MCP status**:
   ```bash
   node <path-to-skill-manager>/bin/skill-manager.cjs mcp list
@@ -160,7 +160,7 @@ Antigravity supports both global MCP servers (`~/.gemini/config/mcp_config.json`
   ```bash
   node <path-to-skill-manager>/bin/skill-manager.cjs mcp enable <server-name>
   ```
-- **Isolate MCP server to current workspace** (project X has the MCP server, project Y does not):
+- **Isolate MCP server to current workspace** (project X has the MCP server enabled in `.gemini/config.json`, project Y does not):
   ```bash
   node <path-to-skill-manager>/bin/skill-manager.cjs mcp isolate <server-name>
   ```

@@ -272,9 +272,64 @@ assert(!fs.existsSync(activeSkillPath), 'Skill must be removed from .agents/skil
 console.log('  ✔ Successfully activated and deactivated in workspace');
 
 // ----------------------------------------------------
-// TEST 8: Repository Catalog Sandbox Protection
+// TEST 8: Antigravity 2.17.0+ Per-Project Configuration & MCP Isolation
 // ----------------------------------------------------
-console.log('\nTest 8: Repository Catalog Sandbox Isolation');
+console.log('\nTest 8: Antigravity 2.17.0+ Per-Project Configuration & MCP Isolation');
+
+// Default workspace resolution (no .gemini/config.json)
+assert.strictEqual(
+  cliModule.getProjectSkillsPath(mockProject),
+  path.join(mockProject, '.agents', 'skills'),
+  'Default workspace skills path must resolve to .agents/skills'
+);
+
+assert.strictEqual(
+  cliModule.getProjectPluginsPath(mockProject),
+  path.join(mockProject, '.agents', 'plugins'),
+  'Default workspace plugins path must resolve to .agents/plugins'
+);
+
+// Test custom personal_customization_dir via .gemini/config.json
+const customProjectDir = path.join(tmpRoot, 'custom-config-project');
+fs.mkdirSync(path.join(customProjectDir, '.gemini'), { recursive: true });
+fs.writeFileSync(
+  path.join(customProjectDir, '.gemini', 'config.json'),
+  JSON.stringify({ personal_customization_dir: 'my_custom_agents' }, null, 2),
+  'utf8'
+);
+
+assert.strictEqual(
+  cliModule.getProjectSkillsPath(customProjectDir),
+  path.join(customProjectDir, 'my_custom_agents', 'skills'),
+  'Workspace skills must respect personal_customization_dir from .gemini/config.json'
+);
+
+assert.strictEqual(
+  cliModule.getProjectPluginsPath(customProjectDir),
+  path.join(customProjectDir, 'my_custom_agents', 'plugins'),
+  'Workspace plugins must respect personal_customization_dir from .gemini/config.json'
+);
+
+// Test MCP isolation creates plugin and updates .gemini/config.json
+const isoRes = cliModule.isolateMcpServerToProject('github', mockProject);
+assert(isoRes === true, 'isolateMcpServerToProject must succeed for configured server');
+
+const projectMcpPlugin = path.join(mockProject, '.agents', 'plugins', 'github-mcp');
+assert(fs.existsSync(path.join(projectMcpPlugin, 'plugin.json')), 'Plugin manifest must exist');
+assert(fs.existsSync(path.join(projectMcpPlugin, 'mcp_config.json')), 'Plugin mcp_config must exist');
+
+const projectGeminiConfig = path.join(mockProject, '.gemini', 'config.json');
+assert(fs.existsSync(projectGeminiConfig), 'Project .gemini/config.json must be created');
+const parsedProjectConfig = JSON.parse(fs.readFileSync(projectGeminiConfig, 'utf8'));
+assert(parsedProjectConfig.plugins && parsedProjectConfig.plugins['github-mcp'] && parsedProjectConfig.plugins['github-mcp'].enabled === true,
+  'Project config.json must mark isolated plugin as enabled'
+);
+console.log('  ✔ Antigravity 2.17.0+ project config and MCP registration verified');
+
+// ----------------------------------------------------
+// TEST 9: Repository Catalog Sandbox Protection
+// ----------------------------------------------------
+console.log('\nTest 9: Repository Catalog Sandbox Isolation');
 if (repoCatalogContentBefore) {
   const repoCatalogContentAfter = fs.readFileSync(repoCatalogPath, 'utf8');
   assert.strictEqual(
@@ -289,7 +344,7 @@ if (repoCatalogContentBefore) {
 fs.rmSync(tmpRoot, { recursive: true, force: true });
 
 console.log('\n======================================================');
-console.log('✔ All 8 Comprehensive Antigravity Tests Passed!       ');
+console.log('✔ All 9 Comprehensive Antigravity Tests Passed!       ');
 console.log('======================================================\n');
 
 function createMockSkill(parentDir, name, description) {

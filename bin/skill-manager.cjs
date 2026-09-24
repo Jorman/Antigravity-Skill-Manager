@@ -51,9 +51,29 @@ function getGlobalSkillsPath() {
   return path.join(getUserHome(), '.gemini', 'config', 'skills');
 }
 
-function getProjectSkillsPath(targetDir) {
+function getProjectCustomizationRoot(targetDir) {
   const root = targetDir ? path.resolve(targetDir) : process.cwd();
-  return path.join(root, '.agents', 'skills');
+  // Check for per-project customization directory configuration (Antigravity 2.17.0+)
+  const projectConfigPath = path.join(root, '.gemini', 'config.json');
+  if (fs.existsSync(projectConfigPath)) {
+    try {
+      const cfg = JSON.parse(fs.readFileSync(projectConfigPath, 'utf8'));
+      if (cfg.personal_customization_dir && typeof cfg.personal_customization_dir === 'string') {
+        return path.resolve(root, cfg.personal_customization_dir);
+      }
+    } catch (_) {}
+  }
+  return path.join(root, '.agents');
+}
+
+function getProjectSkillsPath(targetDir) {
+  const customRoot = getProjectCustomizationRoot(targetDir);
+  return path.join(customRoot, 'skills');
+}
+
+function getProjectPluginsPath(targetDir) {
+  const customRoot = getProjectCustomizationRoot(targetDir);
+  return path.join(customRoot, 'plugins');
 }
 
 function getPacksFilePath() {
@@ -182,6 +202,28 @@ function toggleMcpServer(serverName, enable) {
   return true;
 }
 
+function registerPluginInProjectConfig(projectRoot, pluginName) {
+  try {
+    const configDir = path.join(projectRoot, '.gemini');
+    const configPath = path.join(configDir, 'config.json');
+    fs.mkdirSync(configDir, { recursive: true });
+
+    let cfg = {};
+    if (fs.existsSync(configPath)) {
+      try {
+        cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      } catch (_) {}
+    }
+
+    if (!cfg.plugins || typeof cfg.plugins !== 'object') {
+      cfg.plugins = {};
+    }
+
+    cfg.plugins[pluginName] = { enabled: true };
+    fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf8');
+  } catch (_) {}
+}
+
 function isolateMcpServerToProject(serverName, targetProjectDir) {
   const config = loadMcpConfig();
   if (!config.mcpServers || !config.mcpServers[serverName]) {
@@ -190,7 +232,7 @@ function isolateMcpServerToProject(serverName, targetProjectDir) {
   }
 
   const projectRoot = targetProjectDir ? path.resolve(targetProjectDir) : process.cwd();
-  const pluginDir = path.join(projectRoot, '.agents', 'plugins', `${serverName}-mcp`);
+  const pluginDir = path.join(getProjectPluginsPath(projectRoot), `${serverName}-mcp`);
   fs.mkdirSync(pluginDir, { recursive: true });
 
   // Clone server config without 'disabled' flag
@@ -212,8 +254,12 @@ function isolateMcpServerToProject(serverName, targetProjectDir) {
   };
   fs.writeFileSync(path.join(pluginDir, 'mcp_config.json'), JSON.stringify(projectMcpConfig, null, 2), 'utf8');
 
+  // 3. Register and enable plugin in project configuration (.gemini/config.json) per Antigravity 2.17.0+
+  registerPluginInProjectConfig(projectRoot, `${serverName}-mcp`);
+
   console.log(`\n\x1b[32m✔ Successfully isolated MCP server "${serverName}" to current project workspace!\x1b[0m`);
   console.log(`  Plugin location: \x1b[36m${pluginDir}\x1b[0m`);
+  console.log(`  Project config:  \x1b[36m${path.join(projectRoot, '.gemini', 'config.json')}\x1b[0m`);
   console.log(`  \x1b[90mThis server will run ONLY when working inside this project workspace.\x1b[0m`);
   console.log(`  \x1b[90mOther projects will NOT load "${serverName}".\x1b[0m\n`);
   printReloadReminder();
@@ -1565,7 +1611,10 @@ module.exports = {
   sanitizePath,
   getLibraryPath,
   getGlobalSkillsPath,
+  getProjectCustomizationRoot,
   getProjectSkillsPath,
+  getProjectPluginsPath,
+  registerPluginInProjectConfig,
   getConfiguredMcpServers,
   compareSkillDirectories,
   extractSkillMetadata,
