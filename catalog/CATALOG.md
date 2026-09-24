@@ -1,6 +1,6 @@
 # Local Agent Skill Warehouse Catalog
 
-> Generated on **20/09/2026** by `Antigravity Skill-Manager`.
+> Generated on **24/09/2026** by `Antigravity Skill-Manager`.
 > Total dormant skills: **146** | Total packs: **8** | Estimated prompt tokens saved: **~10.611 tokens/turn**
 
 This catalog indexes all skills stored offline in `~/.gemini/skill-library`.
@@ -8,7 +8,7 @@ These skills remain dormant until summoned for a specific project (`.agents/skil
 
 ---
 
-> ⚡ **Detected Configured MCP Servers:** `agentmemory`, `github`, `graphify`, `stitch`, `stripe`, `supabase`, `mem0-supabase`, `ruflo`, `notebooks`, `visualization`
+> ⚡ **Detected Configured MCP Servers:** `agentmemory`, `brevo`, `brevo-docs`, `github`, `graphify`, `stitch`, `stripe`, `supabase`, `mem0-supabase`, `ruflo`, `notebooks`, `visualization`
 
 ### 📦 Pack: AI Hero & Matt Pocock Engineering Suite (`aihero-mattpocock`) `[Indivisible Bundle]`
 Comprehensive engineering discipline from aihero.dev and github.com/mattpocock/skills: socratic grilling, wayfinder roadmap charts, spec/ticket planning, TDD, code review, systematic debugging, deep-module architecture, and multi-session workflows.
