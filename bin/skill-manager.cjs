@@ -781,19 +781,6 @@ function reindexCatalog(options = {}) {
   const jsonFilePath = path.join(libraryDir, 'catalog.json');
   fs.writeFileSync(jsonFilePath, JSON.stringify(catalogJson, null, 2), 'utf8');
 
-  // Sync to repo catalog ONLY if not in test sandbox and repo directory exists
-  const isTestOrCustom = !!(process.env.ANTIGRAVITY_SKILL_LIBRARY || process.env.NODE_ENV === 'test');
-  const repoCatalogJson = path.join(__dirname, '..', 'catalog', 'catalog.json');
-  if (!isTestOrCustom && fs.existsSync(path.dirname(repoCatalogJson))) {
-    try {
-      const cleanRepoCatalog = {
-        ...catalogJson,
-        configuredMcpServers: [] // Zero host-specific MCP servers in repo
-      };
-      fs.writeFileSync(repoCatalogJson, JSON.stringify(cleanRepoCatalog, null, 2), 'utf8');
-    } catch (_) {}
-  }
-
   // 2. CATALOG.md
   let mdContent = `# Local Agent Skill Warehouse Catalog\n\n`;
   mdContent += `> Generated on **${new Date().toLocaleDateString()}** by \`Antigravity Skill-Manager\`.\n`;
@@ -839,13 +826,6 @@ function reindexCatalog(options = {}) {
 
   const mdFilePath = path.join(libraryDir, 'CATALOG.md');
   fs.writeFileSync(mdFilePath, mdContent, 'utf8');
-
-  const repoCatalogMd = path.join(__dirname, '..', 'catalog', 'CATALOG.md');
-  if (!isTestOrCustom && fs.existsSync(path.dirname(repoCatalogMd))) {
-    try {
-      fs.writeFileSync(repoCatalogMd, mdContent, 'utf8');
-    } catch (_) {}
-  }
 
   if (verbose) {
     console.log(`\x1b[32m✔ Catalog re-indexed successfully!\x1b[0m`);
