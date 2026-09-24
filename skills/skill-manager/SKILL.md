@@ -78,12 +78,11 @@ When the user asks:
      node <path-to-skill-manager>/bin/skill-manager.cjs recommend
      ```
 2. **Catalog & Pack Cross-Referencing**:
-   - Match detected signals against `catalog.json` and `catalog/packs.json`:
-     - *React / Tailwind / UI*: Recommend `stitch-ui` pack (or `react-components`, `design-md`).
-     - *Data Engineering / SQL*: Recommend `gcp-bigquery` pack (or `dbt-bigquery`, `dataform-bigquery`).
-     - *Testing & Clean Code*: Recommend `dev-workflow` pack (`tdd`, `code-review`, `diagnosing-bugs`).
-     - *Python Development*: Recommend `managing-python-dependencies`.
-     - *Large Sessions / Token Optimization*: Recommend `caveman` pack.
+   - Match detected signals against `catalog.json` and defined `packs.json`:
+     - *Frontend / UI*: Recommend UI design or component skills.
+     - *Data Engineering / SQL*: Recommend pipeline and database skills.
+     - *Testing & Quality*: Recommend test-driven development and code review skills.
+     - *Python / Docker*: Recommend environment isolation and container skills.
 3. **Present Structured Advice to User**:
    - State clearly which indicators were detected in their project.
    - List 2 to 3 tailored recommendations with a concise 1-sentence rationale explaining *how* that skill improves the agent's work.

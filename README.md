@@ -54,7 +54,7 @@ You can use specialized 'skills' to help you with complex tasks...
                            │  • CATALOG.md (Agent/Human readable)      │
                            │  • catalog.json (Machine fast index)      │
                            │  • packs.json (Curated skill bundles)     │
-                           │  • 75+ dormant skills (0 prompt tokens!)  │
+                           │  • Dormant skills (0 prompt tokens!)      │
                            └───────────────────────────────────────────┘
 ```
 
@@ -211,17 +211,22 @@ node ./bin/skill-manager.cjs status
 
 ---
 
-## 📦 Built-In Curated Skill Packs
+## 📦 Extensible Skill Packs & Indivisible Bundles
 
-| Pack | Focus Area | Skills Included |
-| :--- | :--- | :--- |
-| `aihero-mattpocock` `[Bundle]` | AI Hero & Matt Pocock Engineering | `ask-matt`, `setup-matt-pocock-skills`, `wayfinder`, `grill-with-docs`, `grill-me`, `grilling`, `domain-modeling`, `codebase-design`, `to-spec`, `to-tickets`, `implement`, `tdd`, `code-review`, `prototype`, `diagnosing-bugs`, `resolving-merge-conflicts`, `triage`, `retro`, `wizard`, `teach`, `research`, etc. (36 skills) |
-| `stitch-ui` | Google Stitch & UI Design | `code-to-design`, `design-md`, `enhance-prompt`, `extract-design-md`, `generate-design`, `manage-design-system`, `react-components`, `react-native`, `react-vite-dashboard`, `remotion`, `shadcn-ui`, `taste-design`, `upload-to-stitch` |
-| `gcp-bigquery` | GCP & BigQuery Data Eng | `bigquery-data-transfer-service`, `building-data-apps`, `data-autocleaning`, `dataform-bigquery`, `dbt-bigquery`, `developing-with-bigquery`, `gcp-data-pipelines`, `gcp-dataflow`, `gcp-spark`, `ml-best-practices` |
-| `bio-research` | Bioinformatics & ML | `alphafold2`, `boltz`, `borzoi`, `chai1`, `diffdock`, `esmfold2`, `evo2`, `fair-esm2`, `ligandmpnn`, `openfold3`, `proteinmpnn`, `scgpt`, `scvi-tools`, `deep-research`, `modal-compute`, `runpod-compute` |
-| `dev-workflow` | Quality & Testing | `tdd`, `code-review`, `deming-cycle`, `diagnosing-bugs`, `resolving-merge-conflicts`, `setup-pre-commit` |
-| `caveman` `[Bundle]` | Token Compression | `caveman`, `caveman-commit`, `caveman-compress`, `caveman-help`, `caveman-review`, `caveman-stats`, `cavecrew` |
-| `agent-authoring`| Prompt & Skill Writing | `writing-for-agents`, `writing-beats`, `writing-fragments`, `writing-shape`, `skill-creator` |
+Skill packs are curated bundles of complementary skills that can be defined in your local warehouse (`~/.gemini/skill-library/packs.json`) or in `catalog/packs.json`. They allow developers and agents to activate an entire toolchain with a single command:
+
+```bash
+# View available packs in your local library
+node ./bin/skill-manager.cjs packs
+
+# Activate a curated pack for the active workspace (.agents/skills/)
+node ./bin/skill-manager.cjs activate <pack-name>
+```
+
+### Indivisible Bundles Protection
+Skills that call each other at runtime via slash commands or tool calls (e.g. router suites) can be declared with `"indivisible": true`. The migration and activation engine treats them as atomic units, ensuring no skill is ever left orphaned between global and project scopes.
+
+For detailed schema specifications and example pack configurations, see [docs/PACKS.md](docs/PACKS.md).
 
 ---
 

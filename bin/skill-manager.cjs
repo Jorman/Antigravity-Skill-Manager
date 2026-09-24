@@ -77,11 +77,11 @@ function getProjectPluginsPath(targetDir) {
 }
 
 function getPacksFilePath() {
-  const repoPacks = path.join(__dirname, '..', 'catalog', 'packs.json');
-  if (fs.existsSync(repoPacks)) return repoPacks;
-
   const libraryPacks = path.join(getLibraryPath(), 'packs.json');
   if (fs.existsSync(libraryPacks)) return libraryPacks;
+
+  const repoPacks = path.join(__dirname, '..', 'catalog', 'packs.json');
+  if (fs.existsSync(repoPacks)) return repoPacks;
 
   return null;
 }
@@ -339,16 +339,25 @@ function compareSkillDirectories(sourceDir, targetDir) {
 // Packs Loader
 // ==========================================
 function loadPacks() {
-  const packsPath = getPacksFilePath();
-  if (!packsPath) return {};
+  const packs = {};
+  const repoPacks = path.join(__dirname, '..', 'catalog', 'packs.json');
+  const libraryPacks = path.join(getLibraryPath(), 'packs.json');
 
-  try {
-    const raw = fs.readFileSync(packsPath, 'utf8');
-    const parsed = JSON.parse(raw);
-    return parsed.packs || {};
-  } catch (_) {
-    return {};
+  if (fs.existsSync(repoPacks)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(repoPacks, 'utf8'));
+      if (parsed.packs) Object.assign(packs, parsed.packs);
+    } catch (_) {}
   }
+
+  if (fs.existsSync(libraryPacks)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(libraryPacks, 'utf8'));
+      if (parsed.packs) Object.assign(packs, parsed.packs);
+    } catch (_) {}
+  }
+
+  return packs;
 }
 
 // ==========================================
@@ -1104,66 +1113,71 @@ function recommendSkills(projectDir) {
   console.log(`Identified Tech Signals: \x1b[32m${envInfo.techSignals.join(', ') || 'General Workflow'}\x1b[0m\n`);
 
   const recommendations = [];
+  const packs = loadPacks();
+  const cat = getCatalogData();
+  const availableSkills = (cat && cat.skills) ? cat.skills : [];
+  const availablePackKeys = Object.keys(packs);
 
-  if (envInfo.techSignals.includes('react') || envInfo.techSignals.includes('tailwind')) {
-    recommendations.push({
-      type: 'pack',
-      target: 'stitch-ui',
-      reason: 'Detected React / Tailwind frontend. Stitch UI provides UI design synthesis, component scaffolding, and CSS cleanup.'
+  // 1. Match packs dynamically by tags or name against techSignals
+  for (const packKey of availablePackKeys) {
+    const p = packs[packKey];
+    if (!p) continue;
+    const tags = (p.tags || []).map(t => t.toLowerCase());
+    const hasMatch = envInfo.techSignals.some(sig => {
+      const s = sig.toLowerCase();
+      return tags.includes(s) || packKey.toLowerCase().includes(s) || (p.name && p.name.toLowerCase().includes(s));
     });
-    recommendations.push({
-      type: 'skill',
-      target: 'react-components',
-      reason: 'Converts mockups and HTML into modular, production-ready React components.'
-    });
+    if (hasMatch) {
+      recommendations.push({
+        type: 'pack',
+        target: packKey,
+        reason: p.description || `Curated pack matching ${envInfo.techSignals.join(', ')}`
+      });
+    }
   }
 
-  if (envInfo.techSignals.includes('testing') || envInfo.techSignals.includes('git')) {
-    recommendations.push({
-      type: 'pack',
-      target: 'aihero-mattpocock',
-      reason: 'Detected Git repository / testing tooling. AI Hero & Matt Pocock suite introduces Socratic grilling, spec planning, TDD, and code-review.'
+  // 2. Match individual warehouse skills dynamically against techSignals
+  for (const s of availableSkills) {
+    const sName = (s.name || '').toLowerCase();
+    const sDesc = (s.description || '').toLowerCase();
+    const hasMatch = envInfo.techSignals.some(sig => {
+      const s = sig.toLowerCase();
+      return sName.includes(s) || sDesc.includes(s);
     });
+    const inMatchedPack = recommendations.some(r => r.type === 'pack' && packs[r.target] && (packs[r.target].skills || []).map(x => x.toLowerCase()).includes(sName));
+    if (hasMatch && !inMatchedPack && recommendations.length < 10) {
+      recommendations.push({
+        type: 'skill',
+        target: s.name,
+        reason: s.description || 'Specialized skill matching project indicators.'
+      });
+    }
   }
 
-  if (envInfo.techSignals.includes('bigquery') || envInfo.techSignals.includes('data-science')) {
-    recommendations.push({
-      type: 'pack',
-      target: 'gcp-bigquery',
-      reason: 'Detected data engineering or BigQuery assets. Provides dbt, Dataform, and SQL optimization skills.'
-    });
+  // 3. Fallback recommendations if warehouse has specific skills
+  if (recommendations.length === 0 && availableSkills.length > 0) {
+    const general = availableSkills.slice(0, 3);
+    for (const g of general) {
+      recommendations.push({
+        type: 'skill',
+        target: g.name,
+        reason: g.description || 'Available in local warehouse'
+      });
+    }
   }
-
-  if (envInfo.techSignals.includes('python')) {
-    recommendations.push({
-      type: 'skill',
-      target: 'managing-python-dependencies',
-      reason: 'Ensures isolated virtual environments, preventing accidental global pip installs.'
-    });
-  }
-
-  if (envInfo.techSignals.includes('docker')) {
-    recommendations.push({
-      type: 'skill',
-      target: 'docker',
-      reason: 'Provides isolated sandbox container execution for tests and replication.'
-    });
-  }
-
-  // Suggest caveman token efficiency
-  recommendations.push({
-    type: 'pack',
-    target: 'caveman',
-    reason: 'Token optimization: Cuts token usage ~75% across long agentic sessions.'
-  });
 
   console.log(`\x1b[1mRecommended Skills & Packs for This Workspace:\x1b[0m\n`);
-  recommendations.forEach((rec, idx) => {
-    const badge = rec.type === 'pack' ? '\x1b[35m[PACK]\x1b[0m' : '\x1b[36m[SKILL]\x1b[0m';
-    console.log(`  ${idx + 1}. ${badge} \x1b[1m${rec.target}\x1b[0m`);
-    console.log(`     \x1b[90m${rec.reason}\x1b[0m`);
-    console.log(`     \x1b[32mActivate with:\x1b[0m skill-manager activate ${rec.target}\n`);
-  });
+  if (recommendations.length > 0) {
+    recommendations.forEach((rec, idx) => {
+      const badge = rec.type === 'pack' ? '\x1b[35m[PACK]\x1b[0m' : '\x1b[36m[SKILL]\x1b[0m';
+      console.log(`  ${idx + 1}. ${badge} \x1b[1m${rec.target}\x1b[0m`);
+      console.log(`     \x1b[90m${rec.reason}\x1b[0m`);
+      console.log(`     \x1b[32mActivate with:\x1b[0m skill-manager activate ${rec.target}\n`);
+    });
+  } else {
+    console.log(`  \x1b[33mNo matching skills or packs found in local warehouse.\x1b[0m`);
+    console.log(`  \x1b[90mTo find skills online, ask: "Search online for a skill that does <X>"\x1b[0m\n`);
+  }
 
   return { envInfo, recommendations };
 }
