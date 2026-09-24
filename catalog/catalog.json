@@ -6,15 +6,6 @@
   "configuredMcpServers": [],
   "totalSkills": 0,
   "estimatedTokensSaved": 0,
-  "packs": [
-    "aihero-mattpocock",
-    "stitch-ui",
-    "gcp-bigquery",
-    "bio-research",
-    "dev-workflow",
-    "caveman",
-    "agent-authoring",
-    "agentmemory-suite"
-  ],
+  "packs": [],
   "skills": []
 }
